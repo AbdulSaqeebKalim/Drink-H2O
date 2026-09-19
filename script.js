@@ -1,16 +1,11 @@
 /**
  * Drink H2O - Daily Hydration Tracker
- * Enhanced with:
- * 1. Fluid animated wave effect in circular progress container
- * 2. Active button press & ripple click feedback
- * 3. Light / Dark theme toggle with persistence
- * 4. Lightweight Canvas confetti explosion on goal completion
- * 5. Custom amount input & quick chips
- * 6. Individual log entry deletion & undo
- * 7. Fluid / Drink Types (Water 💧, Tea 🍵, Coffee ☕, Juice 🧃)
- * 8. Browser notification reminders with customizable interval & test alert
- * 9. Automatic daily intake reset & streak retention logic
- * 10. Live interactive monthly calendar with 🔥 completion markers
+ * Realistic Dual-Wave Fluid Physics & Hydrodynamics:
+ * 1. Dual-wave SVG horizontal continuous translation
+ * 2. 1-second cubic-bezier smooth height transition
+ * 3. Dynamic surface disturbance / splash rippling on new intake
+ * 4. Perfect glassmorphism circular clipping with high-contrast text pill
+ * 5. Full drink types, streak tracking, browser reminders & interactive calendar
  */
 
 (() => {
@@ -67,6 +62,7 @@
   };
 
   let reminderTimerId = null;
+  let rippleTimeoutId = null;
 
   // DOM Elements
   const elements = {
@@ -91,6 +87,7 @@
     cancelGoalBtn: document.getElementById('cancelGoalBtn'),
     circularMeter: document.getElementById('circularMeter'),
     waveContainer: document.getElementById('waveContainer'),
+    waterWaves: document.getElementById('waterWaves'),
     percentText: document.getElementById('percentText'),
     currentIntakeText: document.getElementById('currentIntakeText'),
     remainingText: document.getElementById('remainingText'),
@@ -177,7 +174,7 @@
     customGoalInput: document.getElementById('customGoalInput')
   };
 
-  // Web Audio Context & Sound Synthesis
+  // Web Audio Context & Synthesized Sound Feedback
   let audioCtx = null;
   function getAudioContext() {
     if (!audioCtx) {
@@ -272,7 +269,7 @@
     return getFormattedDate(d);
   }
 
-  // Calculate Hydration Goal based on Profile
+  // Calculate Hydration Goal based on Profile Formula
   function calculateHydrationGoal(profile) {
     let weightInKg = parseFloat(profile.weight) || 70;
     if (profile.weightUnit === 'lbs') {
@@ -322,8 +319,27 @@
   }
 
   // ==========================================================================
-  // Ripple Effect Helper for Buttons
+  // Surface Disturbance & Ripple Animations
   // ==========================================================================
+  function triggerWaterDisturbance() {
+    if (!elements.circularMeter || !elements.waterWaves) return;
+
+    elements.circularMeter.classList.remove('rippling');
+    elements.waterWaves.classList.remove('rippling');
+
+    // Force reflow
+    void elements.circularMeter.offsetWidth;
+
+    elements.circularMeter.classList.add('rippling');
+    elements.waterWaves.classList.add('rippling');
+
+    clearTimeout(rippleTimeoutId);
+    rippleTimeoutId = setTimeout(() => {
+      elements.circularMeter.classList.remove('rippling');
+      elements.waterWaves.classList.remove('rippling');
+    }, 1100);
+  }
+
   function createRipple(event) {
     const button = event.currentTarget;
     if (!button) return;
@@ -357,7 +373,7 @@
   }
 
   // ==========================================================================
-  // Lightweight Canvas Confetti Explosion
+  // Lightweight Canvas Confetti Particle System
   // ==========================================================================
   let confettiParticles = [];
   let confettiAnimFrame = null;
@@ -374,7 +390,7 @@
 
     confettiParticles = [];
     const colors = ['#0284c7', '#38bdf8', '#06b6d4', '#f97316', '#fbbf24', '#10b981', '#ec4899', '#8b5cf6'];
-    const particleCount = 90;
+    const particleCount = 95;
 
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -383,7 +399,7 @@
         x: width / 2,
         y: height / 2 - 40,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 3,
+        vy: Math.sin(angle) * speed - 3.5,
         size: Math.random() * 8 + 4,
         color: colors[Math.floor(Math.random() * colors.length)],
         rotation: Math.random() * 360,
@@ -399,7 +415,7 @@
       cancelAnimationFrame(confettiAnimFrame);
     }
 
-    let startTime = performance.now();
+    const startTime = performance.now();
 
     function renderConfetti(now) {
       const elapsed = now - startTime;
@@ -411,7 +427,7 @@
         p.x += p.vx;
         p.y += p.vy;
         p.vy += 0.22; // Gravity
-        p.vx *= 0.985; // Air drag
+        p.vx *= 0.985; // Drag
         p.rotation += p.rotationSpeed;
         p.wobble += p.wobbleSpeed;
 
@@ -461,7 +477,6 @@
       return;
     }
 
-    // Load saved settings
     const savedEnabled = localStorage.getItem(STORAGE_KEYS.REMINDERS_ENABLED) === 'true';
     const savedInterval = parseInt(localStorage.getItem(STORAGE_KEYS.REMINDER_INTERVAL), 10) || 60;
 
@@ -528,7 +543,6 @@
         updateReminderUI();
         showToast('Hydration reminders activated! 🔔');
       } else {
-        // Denied
         state.remindersEnabled = false;
         elements.reminderToggle.checked = false;
         localStorage.setItem(STORAGE_KEYS.REMINDERS_ENABLED, 'false');
@@ -575,9 +589,7 @@
         body: body,
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%230284c7"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>'
       });
-    } catch (e) {
-      // Catch mobile/iframe restrictions
-    }
+    } catch (e) {}
   }
 
   function triggerTestReminder() {
@@ -607,7 +619,7 @@
   }
 
   // ==========================================================================
-  // Daily Date Rollover & Automatic Reset
+  // Daily Rollover & State Synchronization
   // ==========================================================================
   function checkAndHandleDateRollover() {
     const today = getTodayDateString();
@@ -620,7 +632,6 @@
     }
 
     if (storedDate !== today) {
-      // Archive previous day's intake in history
       if (storedDate && !state.history[storedDate] && state.currentIntake > 0) {
         state.history[storedDate] = {
           intake: state.currentIntake,
@@ -629,7 +640,6 @@
         };
       }
 
-      // Check if goal was met yesterday to preserve streak
       const lastCompleted = localStorage.getItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
       const yesterdayRecord = state.history[yesterday];
       const reachedYesterday = (lastCompleted === yesterday) || (yesterdayRecord && yesterdayRecord.completed);
@@ -639,7 +649,6 @@
         localStorage.setItem(STORAGE_KEYS.STREAK, '0');
       }
 
-      // Reset today's intake & logs
       state.currentIntake = 0;
       state.logs = [];
       state.celebratedToday = false;
@@ -666,7 +675,6 @@
     localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history));
   }
 
-  // Load State from LocalStorage
   function loadState() {
     const today = getTodayDateString();
     const storedDate = localStorage.getItem(STORAGE_KEYS.LAST_DATE);
@@ -758,7 +766,6 @@
     }
   }
 
-  // Check and trigger goal completion milestone
   function checkGoalMilestone() {
     const today = getTodayDateString();
     const yesterday = getYesterdayDateString();
@@ -792,7 +799,6 @@
     elements.congratsModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Launch lightweight dynamic confetti explosion
     launchConfetti();
   }
 
@@ -828,7 +834,7 @@
   }
 
   // ==========================================================================
-  // Water Logging & Fluid Types
+  // Water Logging & Fluid Hydrodynamics
   // ==========================================================================
   function addWater(amount, label = 'Water', drinkIcon = '💧') {
     if (amount <= 0) return;
@@ -848,6 +854,7 @@
     syncTodayHistory();
     saveState();
     updateUI();
+    triggerWaterDisturbance(); // Realistic wave crest disturbance & liquid container bounce
     playWaterDropSound();
     showToast(`+${amount} ml ${label} logged! 💧`);
 
@@ -861,6 +868,7 @@
         syncTodayHistory();
         saveState();
         updateUI();
+        triggerWaterDisturbance();
         renderCalendar();
         showToast('Subtracted 250 ml.');
       } else {
@@ -874,6 +882,7 @@
     syncTodayHistory();
     saveState();
     updateUI();
+    triggerWaterDisturbance();
     renderCalendar();
     showToast(`Undid ${removed.label} (+${removed.amount} ml)`);
   }
@@ -886,6 +895,7 @@
       syncTodayHistory();
       saveState();
       updateUI();
+      triggerWaterDisturbance();
       renderCalendar();
       showToast(`Deleted ${removed.amount} ml entry.`);
     }
@@ -905,6 +915,7 @@
       syncTodayHistory();
       saveState();
       updateUI();
+      triggerWaterDisturbance();
       renderCalendar();
       showToast("Today's intake reset to 0 ml.");
     }
@@ -942,7 +953,7 @@
     const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate();
     const todayStr = getTodayDateString();
 
-    // 1. Previous month padding days
+    // 1. Previous month padding
     for (let x = firstDayIndex; x > 0; x--) {
       const dayNum = prevMonthDays - x + 1;
       const prevDate = new Date(viewYear, viewMonth - 1, dayNum);
@@ -951,7 +962,7 @@
       elements.calendarDaysGrid.appendChild(cell);
     }
 
-    // 2. Current month days
+    // 2. Current month
     for (let day = 1; day <= daysInMonth; day++) {
       const thisDate = new Date(viewYear, viewMonth, day);
       const dateStr = getFormattedDate(thisDate);
@@ -959,7 +970,7 @@
       elements.calendarDaysGrid.appendChild(cell);
     }
 
-    // 3. Next month padding days
+    // 3. Next month padding
     const totalCells = firstDayIndex + daysInMonth;
     const remainingCells = (7 - (totalCells % 7)) % 7;
     for (let i = 1; i <= remainingCells; i++) {
@@ -1069,7 +1080,7 @@
   }
 
   // ==========================================================================
-  // Update UI Elements
+  // Update UI Elements with Fluid Waves & 1s Cubic-Bezier Transition
   // ==========================================================================
   function updateUI() {
     const goal = state.dailyGoal;
@@ -1099,13 +1110,20 @@
       elements.streakBadge.setAttribute('title', "Complete today's goal to build your streak!");
     }
 
-    // Fluid Wave Animation & Progress
+    // Dynamic Central Readouts
     elements.percentText.textContent = `${percent}%`;
     elements.currentIntakeText.textContent = `${intake} ml`;
     elements.remainingText.textContent = remaining > 0 ? `${remaining} ml left` : 'Goal achieved! 🎉';
 
-    const waveHeight = Math.min(100, Math.max(0, percent));
-    elements.waveContainer.style.height = `${waveHeight}%`;
+    // Realistic Wave Hydrodynamics: 0-100% height clamp
+    const targetHeight = Math.min(100, Math.max(0, percent));
+    elements.waveContainer.style.height = `${targetHeight}%`;
+
+    if (targetHeight <= 0) {
+      elements.waveContainer.classList.add('is-empty');
+    } else {
+      elements.waveContainer.classList.remove('is-empty');
+    }
 
     if (percent >= 100) {
       elements.circularMeter.classList.add('goal-achieved');

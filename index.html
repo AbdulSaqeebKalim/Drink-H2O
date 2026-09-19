@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Drink H2O - Daily hydration tracker with fluid wave animations, streak tracking, drink types, browser reminders, interactive calendar, and celebration milestones.">
+  <meta name="description" content="Drink H2O - Daily hydration tracker with realistic fluid wave animations, streak tracking, drink types, browser reminders, interactive calendar, and celebration milestones.">
   <meta name="theme-color" content="#0284c7">
   <title>Drink H2O - Daily Hydration Tracker</title>
   <link rel="stylesheet" href="style.css">
@@ -46,7 +46,7 @@
 
         <!-- Profile & Settings Modal Trigger -->
         <button id="profileModalBtn" class="icon-btn ripple-btn" aria-label="Open Personal Profile & Settings" title="Personal Profile & Settings">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
@@ -54,7 +54,7 @@
 
         <!-- Light / Dark Theme Toggle -->
         <button id="themeToggleBtn" class="icon-btn ripple-btn" aria-label="Toggle light or dark theme" title="Toggle theme">
-          <svg id="themeIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg id="themeIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
@@ -63,7 +63,7 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <!-- Goal & Circular Visual Progress Card with Fluid Animated Wave -->
+      <!-- Goal & Circular Visual Progress Card with Realistic Fluid Wave Animation -->
       <section class="card progress-card">
         <div class="goal-header">
           <div>
@@ -88,25 +88,59 @@
           </div>
         </form>
 
-        <!-- Circular Water Wave Tracker (Fluid Animation) -->
+        <!-- Circular Water Wave Tracker (Realistic Liquid Dual-Wave) -->
         <div class="tracker-wrapper">
           <div class="circular-meter" id="circularMeter">
-            <!-- Fluid Wave Levels -->
-            <div class="wave-container" id="waveContainer">
-              <div class="wave wave-back"></div>
-              <div class="wave wave-mid"></div>
-              <div class="wave wave-front"></div>
-              <div class="bubbles-wrap" id="bubblesWrap" aria-hidden="true">
-                <span class="bubble b1"></span>
-                <span class="bubble b2"></span>
-                <span class="bubble b3"></span>
-                <span class="bubble b4"></span>
+            <!-- Glassmorphism Highlight Curvature -->
+            <div class="glass-reflection" aria-hidden="true"></div>
+            <div class="glass-rim" aria-hidden="true"></div>
+
+            <!-- Fluid Wave Level Container (Smooth 1s Height Transition) -->
+            <div class="wave-container is-empty" id="waveContainer">
+              <!-- Dual Animated Wave SVG Surface -->
+              <div class="water-waves" id="waterWaves">
+                <!-- Back Wave Layer (Lighter/Subtle Depth) -->
+                <svg class="wave-svg wave-back" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="waveBackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8" />
+                      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.6" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0,20 Q 150,45 300,20 T 600,20 Q 750,45 900,20 T 1200,20 L 1200,60 L 0,60 Z" fill="url(#waveBackGrad)" />
+                </svg>
+
+                <!-- Front Wave Layer (Vibrant Ocean Surface Crest) -->
+                <svg class="wave-svg wave-front" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="waveFrontGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.95" />
+                      <stop offset="50%" stop-color="#0ea5e9" stop-opacity="0.9" />
+                      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.85" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0,25 Q 150,0 300,25 T 600,25 Q 750,0 900,25 T 1200,25 L 1200,60 L 0,60 Z" fill="url(#waveFrontGrad)" />
+                </svg>
+              </div>
+
+              <!-- Main Water Liquid Body (Rich Ocean Blue Gradient) -->
+              <div class="water-body">
+                <div class="bubbles-wrap" id="bubblesWrap" aria-hidden="true">
+                  <span class="bubble b1"></span>
+                  <span class="bubble b2"></span>
+                  <span class="bubble b3"></span>
+                  <span class="bubble b4"></span>
+                </div>
               </div>
             </div>
+
+            <!-- Dynamic Centered Text Readout with Contrast Pill -->
             <div class="meter-content">
-              <span class="percentage" id="percentText">0%</span>
-              <span class="volume-consumed" id="currentIntakeText">0 ml</span>
-              <span class="remaining-volume" id="remainingText">2500 ml left</span>
+              <div class="meter-pill">
+                <span class="percentage" id="percentText">0%</span>
+                <span class="volume-consumed" id="currentIntakeText">0 ml</span>
+                <span class="remaining-volume" id="remainingText">2500 ml left</span>
+              </div>
             </div>
           </div>
         </div>
@@ -130,7 +164,7 @@
         </div>
       </section>
 
-      <!-- Water Logging Actions with Drink Types, Presets & Custom Input -->
+      <!-- Water Logging Actions with Beverage Types, Presets & Custom Input -->
       <section class="card action-card">
         <div class="action-card-header">
           <h2 class="section-title">Log Intake</h2>
@@ -288,7 +322,7 @@
         </div>
       </section>
 
-      <!-- Today's Log History with Drink Badges & Individual Delete Buttons -->
+      <!-- Today's Log History with Beverage Badges & Individual Delete Buttons -->
       <section class="card history-card">
         <div class="history-header">
           <div>
@@ -310,7 +344,6 @@
     <!-- Congratulations Goal Completion Modal Popup with Confetti Animation -->
     <div id="congratsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="congratsTitle">
       <div class="modal-card congrats-card">
-        <!-- Confetti Floating Badges -->
         <div class="congrats-sparkles" aria-hidden="true">
           <span class="sparkle s1">✨</span>
           <span class="sparkle s2">💧</span>
