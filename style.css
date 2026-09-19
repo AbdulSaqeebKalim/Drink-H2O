@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Drink H2O - Style Sheet with Personal Profile, Streak, Reset & Calendar
+   Drink H2O - Enhanced Styling with Wave Animations, Ripples & Drink Types
    ========================================================================== */
 
 :root {
@@ -8,8 +8,12 @@
   --primary-light: #e0f2fe;
   --primary-dark: #0c4a6e;
   --accent-cyan: #06b6d4;
-  --accent-wave: rgba(2, 132, 199, 0.4);
-  --accent-wave-front: rgba(6, 182, 212, 0.65);
+  
+  /* Layered Wave Gradient & Opacities */
+  --wave-gradient: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+  --accent-wave-back: rgba(2, 132, 199, 0.45);
+  --accent-wave-mid: rgba(14, 165, 233, 0.6);
+  --accent-wave-front: rgba(6, 182, 212, 0.75);
 
   --fire-primary: #f97316;
   --fire-gradient: linear-gradient(135deg, #f97316, #ef4444);
@@ -19,7 +23,9 @@
   --bg-app: #f0f9ff;
   --surface: #ffffff;
   --surface-secondary: #f8fafc;
+  --surface-tertiary: #f1f5f9;
   --border: #e2e8f0;
+  --border-focus: #38bdf8;
   --text-main: #0f172a;
   --text-muted: #64748b;
   
@@ -36,12 +42,13 @@
   --radius-full: 9999px;
   
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(2, 132, 199, 0.08);
+  --shadow-md: 0 4px 14px rgba(2, 132, 199, 0.08);
   --shadow-lg: 0 10px 25px -5px rgba(2, 132, 199, 0.12);
   --shadow-modal: 0 20px 40px rgba(15, 23, 42, 0.25);
-  --shadow-fire: 0 4px 12px rgba(249, 115, 22, 0.25);
+  --shadow-fire: 0 4px 14px rgba(249, 115, 22, 0.25);
   
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s ease;
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Dark Theme Variables */
@@ -50,8 +57,11 @@
   --primary-hover: #7dd3fc;
   --primary-light: #082f49;
   --primary-dark: #bae6fd;
-  --accent-wave: rgba(14, 165, 233, 0.35);
-  --accent-wave-front: rgba(56, 189, 248, 0.55);
+  
+  --wave-gradient: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+  --accent-wave-back: rgba(14, 165, 233, 0.35);
+  --accent-wave-mid: rgba(56, 189, 248, 0.5);
+  --accent-wave-front: rgba(6, 182, 212, 0.65);
 
   --fire-primary: #fb923c;
   --fire-gradient: linear-gradient(135deg, #fb923c, #f87171);
@@ -61,17 +71,19 @@
   --bg-app: #090e17;
   --surface: #131c2d;
   --surface-secondary: #1a263c;
+  --surface-tertiary: #223049;
   --border: #23334d;
+  --border-focus: #38bdf8;
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
 
   --danger-bg: #3b1111;
   --danger-border: #7f1d1d;
   
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.6);
-  --shadow-fire: 0 4px 14px rgba(249, 115, 22, 0.35);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.65);
+  --shadow-fire: 0 4px 16px rgba(249, 115, 22, 0.35);
 }
 
 /* Global Reset & Base */
@@ -92,6 +104,18 @@ body {
   align-items: flex-start;
   padding: 16px 12px;
   transition: background-color 0.3s ease, color 0.3s ease;
+  position: relative;
+}
+
+/* Confetti Canvas */
+.confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1001;
 }
 
 .app-container {
@@ -101,6 +125,48 @@ body {
   flex-direction: column;
   gap: 16px;
   margin: 0 auto;
+}
+
+/* ==========================================================================
+   Ripple Effect & Active Button Press Animations
+   ========================================================================== */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+/* Tactile Active Press Animation (scale down on tap) */
+.ripple-btn:active,
+.btn:active,
+.btn-preset:active,
+.drink-tag-btn:active,
+.chip-btn:active,
+.icon-btn:active,
+.icon-btn-sm:active {
+  transform: scale(0.95) !important;
+}
+
+/* Dynamic Ripple Span */
+.ripple-circle {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: rippleAnimation 0.55s ease-out;
+  background-color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+[data-theme="dark"] .ripple-circle {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes rippleAnimation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
 /* Header */
@@ -128,6 +194,11 @@ body {
   justify-content: center;
   box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
   flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.brand:hover .brand-icon {
+  transform: rotate(-8deg) scale(1.05);
 }
 
 .brand-title {
@@ -201,7 +272,7 @@ body {
   font-weight: 800;
 }
 
-/* Standard Icon Buttons */
+/* Icon Buttons */
 .icon-btn {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -219,7 +290,7 @@ body {
 }
 
 .icon-btn:hover {
-  transform: scale(1.05);
+  transform: translateY(-1px);
   border-color: var(--primary);
   color: var(--primary);
 }
@@ -273,7 +344,9 @@ body {
   font-weight: 500;
 }
 
-/* Progress Section */
+/* ==========================================================================
+   Progress Section with Fluid Animated Wave
+   ========================================================================== */
 .goal-header {
   display: flex;
   justify-content: space-between;
@@ -331,6 +404,7 @@ body {
   padding: 6px 14px;
   border-radius: var(--radius-full);
   letter-spacing: -0.01em;
+  transition: var(--transition);
 }
 
 .goal-edit-form {
@@ -373,7 +447,9 @@ body {
   font-weight: 600;
 }
 
-/* Circular Meter with Animated Water Wave */
+/* ==========================================================================
+   Fluid Wave Visual Progress Tracker
+   ========================================================================== */
 .tracker-wrapper {
   display: flex;
   justify-content: center;
@@ -392,45 +468,103 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(2, 132, 199, 0.1);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(2, 132, 199, 0.12);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+.circular-meter.goal-achieved {
+  border-color: var(--primary);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.08), 0 0 24px rgba(2, 132, 199, 0.35);
+}
+
+/* Wave Container filling vertically */
 .wave-container {
   position: absolute;
   left: 0;
   bottom: 0;
   width: 100%;
   height: 0%;
-  background: var(--primary);
-  transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: var(--wave-gradient);
+  transition: height 0.75s cubic-bezier(0.34, 1.3, 0.64, 1);
+  overflow: visible;
 }
 
+/* Continuous Fluid Waves */
 .wave {
   position: absolute;
   left: -50%;
   width: 200%;
   height: 200%;
-  border-radius: 40%;
-  opacity: 0.7;
+  border-radius: 38%;
+  pointer-events: none;
 }
 
 .wave-back {
-  background-color: var(--accent-wave);
+  background-color: var(--accent-wave-back);
   top: -190%;
-  animation: rotateWave 9s infinite linear;
+  animation: rotateWaveBack 10s infinite linear;
+}
+
+.wave-mid {
+  background-color: var(--accent-wave-mid);
+  top: -187%;
+  border-radius: 41%;
+  animation: rotateWaveMid 7s infinite linear reverse;
 }
 
 .wave-front {
   background-color: var(--accent-wave-front);
-  top: -186%;
-  animation: rotateWave 5s infinite linear;
+  top: -184%;
+  border-radius: 39%;
+  animation: rotateWaveFront 5s infinite linear;
 }
 
-@keyframes rotateWave {
+@keyframes rotateWaveBack {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
+@keyframes rotateWaveMid {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes rotateWaveFront {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Floating Bubbles inside water */
+.bubbles-wrap {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bubble {
+  position: absolute;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  animation: riseBubble 4s infinite ease-in;
+}
+
+.bubble.b1 { left: 25%; width: 8px; height: 8px; animation-duration: 3.5s; animation-delay: 0.2s; }
+.bubble.b2 { left: 55%; width: 12px; height: 12px; animation-duration: 4.5s; animation-delay: 1.2s; }
+.bubble.b3 { left: 75%; width: 6px; height: 6px; animation-duration: 3s; animation-delay: 0.8s; }
+.bubble.b4 { left: 40%; width: 10px; height: 10px; animation-duration: 4s; animation-delay: 2s; }
+
+@keyframes riseBubble {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  30% { opacity: 0.7; }
+  100% { transform: translateY(-160px) scale(1.1); opacity: 0; }
+}
+
+/* High Contrast Meter Typography */
 .meter-content {
   position: relative;
   z-index: 10;
@@ -440,6 +574,7 @@ body {
   justify-content: center;
   text-align: center;
   pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 .percentage {
@@ -448,6 +583,7 @@ body {
   letter-spacing: -0.03em;
   color: var(--text-main);
   line-height: 1;
+  transition: transform 0.2s ease;
 }
 
 .volume-consumed {
@@ -503,13 +639,98 @@ body {
   background-color: var(--border);
 }
 
-/* Water Logging Section */
+/* ==========================================================================
+   Drink / Fluid Types Section
+   ========================================================================== */
 .action-card {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+.action-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selected-drink-indicator {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--surface-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+}
+
+.selected-drink-indicator strong {
+  color: var(--primary);
+}
+
+.drink-types-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drink-type-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.drink-tags-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.drink-tag-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: var(--transition);
+  outline: none;
+}
+
+.drink-tag-btn:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.drink-tag-btn.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+[data-theme="dark"] .drink-tag-btn.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.drink-tag-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.drink-tag-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* Preset Amount Buttons */
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -527,8 +748,6 @@ body {
   padding: 14px 8px;
   cursor: pointer;
   transition: var(--transition);
-  position: relative;
-  overflow: hidden;
 }
 
 .btn-preset:hover {
@@ -536,10 +755,6 @@ body {
   background: var(--primary-light);
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
-}
-
-.btn-preset:active {
-  transform: scale(0.97);
 }
 
 .preset-icon {
@@ -559,7 +774,25 @@ body {
   font-weight: 600;
 }
 
-/* Custom Log Form */
+/* ==========================================================================
+   Custom Amount Input & Quick Chips
+   ========================================================================== */
+.custom-log-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+.custom-input-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
 .custom-log-form .input-group {
   display: flex;
   gap: 8px;
@@ -567,10 +800,10 @@ body {
 
 .input-group input {
   flex: 1;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-secondary);
+  background: var(--surface);
   color: var(--text-main);
   font-size: 0.92rem;
   font-family: inherit;
@@ -581,8 +814,31 @@ body {
 .input-group input:focus {
   outline: none;
   border-color: var(--primary);
-  background: var(--surface);
   box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.quick-chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.chip-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* Secondary Actions */
@@ -595,7 +851,7 @@ body {
   flex: 1;
 }
 
-/* Buttons */
+/* Standard Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -611,10 +867,6 @@ body {
   transition: var(--transition);
   text-decoration: none;
   white-space: nowrap;
-}
-
-.btn:active {
-  transform: scale(0.98);
 }
 
 .btn-sm {
@@ -903,7 +1155,7 @@ body {
 }
 
 /* ==========================================================================
-   Today's Log History Section
+   Today's Log History Section with Delete Action
    ========================================================================== */
 .history-card {
   display: flex;
@@ -938,7 +1190,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 220px;
+  max-height: 240px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -952,6 +1204,12 @@ body {
   border-radius: var(--radius-md);
   padding: 10px 12px;
   animation: fadeIn 0.25s ease-out;
+  transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.log-item.deleting {
+  transform: translateX(40px);
+  opacity: 0;
 }
 
 .log-info {
@@ -960,8 +1218,17 @@ body {
   gap: 10px;
 }
 
-.log-icon {
+.log-icon-bubble {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.15rem;
+  flex-shrink: 0;
 }
 
 .log-amount {
@@ -976,13 +1243,20 @@ body {
   font-weight: 500;
 }
 
+.log-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .log-delete-btn {
-  background: none;
-  border: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
   color: var(--text-muted);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -992,14 +1266,24 @@ body {
 .log-delete-btn:hover {
   color: var(--danger);
   background: var(--danger-bg);
+  border-color: var(--danger-border);
 }
 
 .empty-state {
   text-align: center;
-  padding: 24px 12px;
+  padding: 28px 14px;
   color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state-icon {
+  font-size: 2.2rem;
+  opacity: 0.6;
 }
 
 .empty-state.hidden {
@@ -1007,7 +1291,7 @@ body {
 }
 
 /* ==========================================================================
-   Modals
+   Modals & Notifications
    ========================================================================== */
 .modal-backdrop {
   position: fixed;
@@ -1108,6 +1392,145 @@ body {
 .close-btn:hover {
   background: var(--border);
   color: var(--text-main);
+}
+
+/* ==========================================================================
+   Browser Reminders Settings Box
+   ========================================================================== */
+.reminder-settings-box {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reminder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reminder-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reminder-icon {
+  font-size: 1.3rem;
+}
+
+.reminder-title {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.reminder-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border);
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.reminder-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.reminder-options.hidden {
+  display: none;
+}
+
+.reminder-interval-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.reminder-interval-row label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.reminder-interval-row select {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.reminder-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reminder-perm-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 /* Streak Management Box inside Profile Modal */
@@ -1540,7 +1963,7 @@ body {
   opacity: 0;
   transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease;
   pointer-events: none;
-  z-index: 1000;
+  z-index: 1002;
 }
 
 .toast.show {
@@ -1591,5 +2014,18 @@ body {
   }
   .cal-day {
     min-height: 42px;
+  }
+  .drink-tags-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .drink-tag-btn {
+    padding: 6px 2px;
+  }
+  .drink-tag-icon {
+    font-size: 1.1rem;
+  }
+  .drink-tag-name {
+    font-size: 0.65rem;
   }
 }

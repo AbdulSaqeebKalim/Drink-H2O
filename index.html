@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Drink H2O - Smart daily hydration tracker with personalized profile calculations, streak tracking, interactive calendar, and celebration milestones.">
+  <meta name="description" content="Drink H2O - Daily hydration tracker with fluid wave animations, streak tracking, drink types, browser reminders, interactive calendar, and celebration milestones.">
   <meta name="theme-color" content="#0284c7">
   <title>Drink H2O - Daily Hydration Tracker</title>
   <link rel="stylesheet" href="style.css">
@@ -12,6 +12,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- Fullscreen Confetti Canvas for Celebratory Goal Completion -->
+  <canvas id="confettiCanvas" class="confetti-canvas" aria-hidden="true"></canvas>
+
   <div class="app-container">
     <!-- Header -->
     <header class="app-header">
@@ -35,32 +38,24 @@
         </div>
 
         <!-- Quick Reset Streak Action Button -->
-        <button id="quickStreakResetBtn" class="icon-btn danger-hover" aria-label="Reset Streak to 0" title="Reset Streak to 0">
+        <button id="quickStreakResetBtn" class="icon-btn danger-hover ripple-btn" aria-label="Reset Streak to 0" title="Reset Streak to 0">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
           </svg>
         </button>
 
-        <!-- Profile / Calculator Modal Trigger -->
-        <button id="profileModalBtn" class="icon-btn" aria-label="Open Personal Profile & Goal Calculator" title="Personal Profile & Settings">
+        <!-- Profile & Settings Modal Trigger -->
+        <button id="profileModalBtn" class="icon-btn ripple-btn" aria-label="Open Personal Profile & Settings" title="Personal Profile & Settings">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
         </button>
 
-        <!-- Theme Toggle -->
-        <button id="themeToggleBtn" class="icon-btn" aria-label="Toggle theme" title="Toggle theme">
+        <!-- Light / Dark Theme Toggle -->
+        <button id="themeToggleBtn" class="icon-btn ripple-btn" aria-label="Toggle light or dark theme" title="Toggle theme">
           <svg id="themeIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
       </div>
@@ -68,7 +63,7 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <!-- Goal & Circular Visual Progress Card -->
+      <!-- Goal & Circular Visual Progress Card with Fluid Animated Wave -->
       <section class="card progress-card">
         <div class="goal-header">
           <div>
@@ -87,18 +82,26 @@
           <label for="goalInput">Custom Daily Water Goal (ml):</label>
           <div class="input-inline">
             <input type="number" id="goalInput" min="500" max="8000" step="50" value="2500" required>
-            <button type="submit" class="btn btn-primary btn-sm">Set Goal</button>
-            <button type="button" id="recalcFromProfileBtn" class="btn btn-outline btn-sm" title="Revert to profile recommendation">Auto-Calc</button>
+            <button type="submit" class="btn btn-primary btn-sm ripple-btn">Set Goal</button>
+            <button type="button" id="recalcFromProfileBtn" class="btn btn-outline btn-sm ripple-btn" title="Revert to profile recommendation">Auto-Calc</button>
             <button type="button" id="cancelGoalBtn" class="btn btn-text btn-sm">✕</button>
           </div>
         </form>
 
-        <!-- Circular Water Wave Tracker -->
+        <!-- Circular Water Wave Tracker (Fluid Animation) -->
         <div class="tracker-wrapper">
-          <div class="circular-meter">
+          <div class="circular-meter" id="circularMeter">
+            <!-- Fluid Wave Levels -->
             <div class="wave-container" id="waveContainer">
               <div class="wave wave-back"></div>
+              <div class="wave wave-mid"></div>
               <div class="wave wave-front"></div>
+              <div class="bubbles-wrap" id="bubblesWrap" aria-hidden="true">
+                <span class="bubble b1"></span>
+                <span class="bubble b2"></span>
+                <span class="bubble b3"></span>
+                <span class="bubble b4"></span>
+              </div>
             </div>
             <div class="meter-content">
               <span class="percentage" id="percentText">0%</span>
@@ -127,52 +130,94 @@
         </div>
       </section>
 
-      <!-- Water Logging Actions -->
+      <!-- Water Logging Actions with Drink Types, Presets & Custom Input -->
       <section class="card action-card">
-        <h2 class="section-title">Log Water Intake</h2>
+        <div class="action-card-header">
+          <h2 class="section-title">Log Intake</h2>
+          <span class="selected-drink-indicator" id="selectedDrinkIndicator">
+            Current: <strong id="activeDrinkName">Water 💧</strong>
+          </span>
+        </div>
+
+        <!-- Fluid / Drink Type Selection Tags -->
+        <div class="drink-types-container">
+          <label class="drink-type-label">Select Beverage Type:</label>
+          <div class="drink-tags-grid" role="radiogroup" aria-label="Drink Type">
+            <button type="button" class="drink-tag-btn active ripple-btn" data-type="Water" data-icon="💧" role="radio" aria-checked="true">
+              <span class="drink-tag-icon">💧</span>
+              <span class="drink-tag-name">Water</span>
+            </button>
+            <button type="button" class="drink-tag-btn ripple-btn" data-type="Tea" data-icon="🍵" role="radio" aria-checked="false">
+              <span class="drink-tag-icon">🍵</span>
+              <span class="drink-tag-name">Tea</span>
+            </button>
+            <button type="button" class="drink-tag-btn ripple-btn" data-type="Coffee" data-icon="☕" role="radio" aria-checked="false">
+              <span class="drink-tag-icon">☕</span>
+              <span class="drink-tag-name">Coffee</span>
+            </button>
+            <button type="button" class="drink-tag-btn ripple-btn" data-type="Juice" data-icon="🧃" role="radio" aria-checked="false">
+              <span class="drink-tag-icon">🧃</span>
+              <span class="drink-tag-name">Juice</span>
+            </button>
+          </div>
+        </div>
         
-        <!-- Preset Amount Buttons -->
+        <!-- Preset Amount Buttons with Active Press Animation & Ripples -->
         <div class="preset-grid">
-          <button class="btn btn-preset" data-amount="150" aria-label="Add 150 ml">
+          <button class="btn btn-preset ripple-btn" data-amount="150" aria-label="Add 150 ml">
             <span class="preset-icon">☕</span>
             <span class="preset-amount">+150 ml</span>
             <span class="preset-desc">Small Cup</span>
           </button>
-          <button class="btn btn-preset active" data-amount="250" aria-label="Add 250 ml">
+          <button class="btn btn-preset ripple-btn active" data-amount="250" aria-label="Add 250 ml">
             <span class="preset-icon">🥛</span>
             <span class="preset-amount">+250 ml</span>
             <span class="preset-desc">Standard Glass</span>
           </button>
-          <button class="btn btn-preset" data-amount="500" aria-label="Add 500 ml">
+          <button class="btn btn-preset ripple-btn" data-amount="500" aria-label="Add 500 ml">
             <span class="preset-icon">🍶</span>
             <span class="preset-amount">+500 ml</span>
             <span class="preset-desc">Water Bottle</span>
           </button>
-          <button class="btn btn-preset" data-amount="750" aria-label="Add 750 ml">
+          <button class="btn btn-preset ripple-btn" data-amount="750" aria-label="Add 750 ml">
             <span class="preset-icon">🫙</span>
             <span class="preset-amount">+750 ml</span>
             <span class="preset-desc">Large Flask</span>
           </button>
         </div>
 
-        <!-- Custom Intake Input -->
+        <!-- Custom Intake Input & Custom Add Button -->
         <form id="customLogForm" class="custom-log-form">
+          <label for="customAmountInput" class="custom-input-label">Custom Amount (ml):</label>
           <div class="input-group">
-            <input type="number" id="customAmountInput" placeholder="Custom ml (e.g. 300)" min="10" max="3000" step="10">
-            <button type="submit" class="btn btn-primary" id="addCustomBtn">Add Intake</button>
+            <input type="number" id="customAmountInput" placeholder="Enter ml (e.g. 350)" min="10" max="3000" step="10" required>
+            <button type="submit" class="btn btn-primary ripple-btn" id="addCustomBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Custom Add
+            </button>
+          </div>
+          <!-- Quick increment chips for convenience -->
+          <div class="quick-chip-row">
+            <button type="button" class="chip-btn ripple-btn" data-quick="100">+100 ml</button>
+            <button type="button" class="chip-btn ripple-btn" data-quick="200">+200 ml</button>
+            <button type="button" class="chip-btn ripple-btn" data-quick="350">+350 ml</button>
+            <button type="button" class="chip-btn ripple-btn" data-quick="600">+600 ml</button>
           </div>
         </form>
 
-        <!-- Secondary Actions -->
+        <!-- Secondary Actions (Undo & Reset Day) -->
         <div class="secondary-actions">
-          <button id="undoBtn" class="btn btn-outline" title="Subtract 250ml or undo last intake">
+          <button id="undoBtn" class="btn btn-outline ripple-btn" title="Undo latest intake entry or subtract 250ml">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 7v6h6"></path>
               <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
             </svg>
-            Subtract 250ml
+            Undo Last Entry
           </button>
-          <button id="resetDayBtn" class="btn btn-danger-outline" title="Reset today's progress">
+          <button id="resetDayBtn" class="btn btn-danger-outline ripple-btn" title="Reset today's progress to 0 ml">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="1 4 1 10 7 10"></polyline>
               <polyline points="23 20 23 14 17 14"></polyline>
@@ -195,18 +240,18 @@
           </div>
 
           <div class="calendar-nav-group">
-            <button id="calPrevMonthBtn" class="icon-btn-sm" aria-label="Previous Month" title="Previous Month">
+            <button id="calPrevMonthBtn" class="icon-btn-sm ripple-btn" aria-label="Previous Month" title="Previous Month">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
             </button>
             <span id="calMonthYearLabel" class="calendar-month-label">September 2026</span>
-            <button id="calNextMonthBtn" class="icon-btn-sm" aria-label="Next Month" title="Next Month">
+            <button id="calNextMonthBtn" class="icon-btn-sm ripple-btn" aria-label="Next Month" title="Next Month">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </button>
-            <button id="calTodayBtn" class="btn btn-outline btn-xs" title="Jump to current date">Today</button>
+            <button id="calTodayBtn" class="btn btn-outline btn-xs ripple-btn" title="Jump to current date">Today</button>
           </div>
         </div>
 
@@ -243,25 +288,29 @@
         </div>
       </section>
 
-      <!-- Today's Log History -->
+      <!-- Today's Log History with Drink Badges & Individual Delete Buttons -->
       <section class="card history-card">
         <div class="history-header">
-          <h2 class="section-title">Today's Logs</h2>
+          <div>
+            <h2 class="section-title">Today's Logs</h2>
+            <p class="section-subtitle">Click delete (✕) on any item to correct entries</p>
+          </div>
           <span class="badge" id="totalLoggedBadge">0 ml Total</span>
         </div>
         <ul id="logList" class="log-list">
-          <!-- Dynamically populated -->
+          <!-- Dynamically populated via script.js -->
         </ul>
         <div id="emptyLogState" class="empty-state">
-          <p>No intake logged yet today. Tap any preset above to begin!</p>
+          <span class="empty-state-icon">💧</span>
+          <p>No intake logged yet today. Select a drink type and tap a preset or custom amount above!</p>
         </div>
       </section>
     </main>
 
-    <!-- Congratulations Goal Completion Modal Popup -->
+    <!-- Congratulations Goal Completion Modal Popup with Confetti Animation -->
     <div id="congratsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="congratsTitle">
       <div class="modal-card congrats-card">
-        <!-- Confetti Burst Graphic -->
+        <!-- Confetti Floating Badges -->
         <div class="congrats-sparkles" aria-hidden="true">
           <span class="sparkle s1">✨</span>
           <span class="sparkle s2">💧</span>
@@ -294,7 +343,7 @@
         </p>
 
         <div class="congrats-actions">
-          <button id="closeCongratsBtn" class="btn btn-primary congrats-btn">Great! 🎉</button>
+          <button id="closeCongratsBtn" class="btn btn-primary congrats-btn ripple-btn">Great! 🎉</button>
         </div>
       </div>
     </div>
@@ -313,13 +362,13 @@
           Your current streak of <strong id="modalCurrentStreakCount">0</strong> consecutive days will be cleared and cannot be undone.
         </p>
         <div class="modal-actions confirm-actions">
-          <button type="button" id="cancelResetStreakBtn" class="btn btn-outline">Keep Streak</button>
-          <button type="button" id="confirmResetStreakBtn" class="btn btn-danger">Yes, Reset Streak</button>
+          <button type="button" id="cancelResetStreakBtn" class="btn btn-outline ripple-btn">Keep Streak</button>
+          <button type="button" id="confirmResetStreakBtn" class="btn btn-danger ripple-btn">Yes, Reset Streak</button>
         </div>
       </div>
     </div>
 
-    <!-- Personal Profile & Goal Calculator Modal -->
+    <!-- Personal Profile & Settings Modal with Browser Reminders Toggle -->
     <div id="profileModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
       <div class="modal-card">
         <div class="modal-header">
@@ -338,6 +387,46 @@
           <button id="closeProfileModalBtn" class="close-btn" aria-label="Close profile modal">✕</button>
         </div>
 
+        <!-- Browser Reminders Settings Section -->
+        <div class="reminder-settings-box">
+          <div class="reminder-header">
+            <div class="reminder-info">
+              <span class="reminder-icon">🔔</span>
+              <div>
+                <span class="reminder-title">Hydration Reminders</span>
+                <span class="reminder-subtitle" id="reminderStatusText">Get periodic browser reminders</span>
+              </div>
+            </div>
+            <label class="switch" aria-label="Toggle hydration browser reminders">
+              <input type="checkbox" id="reminderToggle">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div id="reminderOptions" class="reminder-options hidden">
+            <div class="reminder-interval-row">
+              <label for="reminderIntervalSelect">Remind me every:</label>
+              <select id="reminderIntervalSelect">
+                <option value="30">30 minutes</option>
+                <option value="45">45 minutes</option>
+                <option value="60" selected>60 minutes (1 hour)</option>
+                <option value="90">90 minutes (1.5 hours)</option>
+                <option value="120">120 minutes (2 hours)</option>
+              </select>
+            </div>
+            <div class="reminder-action-row">
+              <button type="button" id="testReminderBtn" class="btn btn-outline btn-xs ripple-btn">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                Send Test Alert
+              </button>
+              <span class="reminder-perm-status" id="reminderPermStatus">Status: Inactive</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Streak Management Box inside Profile Modal -->
         <div class="profile-streak-box">
           <div class="profile-streak-header">
@@ -348,13 +437,14 @@
                 <span class="profile-streak-count" id="profileModalStreakCount">0 Consecutive Days</span>
               </div>
             </div>
-            <button type="button" id="modalResetStreakBtn" class="btn btn-danger-outline btn-sm">
+            <button type="button" id="modalResetStreakBtn" class="btn btn-danger-outline btn-sm ripple-btn">
               Reset Streak
             </button>
           </div>
           <p class="profile-streak-hint">Reach your daily target consistently each day to build your streak.</p>
         </div>
 
+        <!-- Profile Form -->
         <form id="profileForm" class="profile-form">
           <!-- Real-Time Calculation Preview Card -->
           <div class="calc-preview-card">
@@ -453,8 +543,8 @@
 
           <!-- Modal Actions -->
           <div class="modal-actions">
-            <button type="button" id="cancelProfileBtn" class="btn btn-outline">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save & Apply Goal</button>
+            <button type="button" id="cancelProfileBtn" class="btn btn-outline ripple-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary ripple-btn">Save & Apply Goal</button>
           </div>
         </form>
       </div>

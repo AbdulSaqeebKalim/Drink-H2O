@@ -1,11 +1,16 @@
 /**
  * Drink H2O - Daily Hydration Tracker
- * Advanced Features:
- * 1. Automatic Daily Intake Reset (New Day Logic with previous day goal evaluation)
- * 2. Manual Streak Reset Feature with confirmation safeguards
- * 3. Live Interactive Calendar with historical goal completion markers (🔥) and month navigation
- * 4. Personal Profile & Hydration Goal Calculator
- * 5. Audio synthesis and celebratory milestones
+ * Enhanced with:
+ * 1. Fluid animated wave effect in circular progress container
+ * 2. Active button press & ripple click feedback
+ * 3. Light / Dark theme toggle with persistence
+ * 4. Lightweight Canvas confetti explosion on goal completion
+ * 5. Custom amount input & quick chips
+ * 6. Individual log entry deletion & undo
+ * 7. Fluid / Drink Types (Water 💧, Tea 🍵, Coffee ☕, Juice 🧃)
+ * 8. Browser notification reminders with customizable interval & test alert
+ * 9. Automatic daily intake reset & streak retention logic
+ * 10. Live interactive monthly calendar with 🔥 completion markers
  */
 
 (() => {
@@ -21,7 +26,9 @@
     PROFILE: 'drink_h2o_user_profile',
     STREAK: 'drink_h2o_streak',
     LAST_COMPLETED_DATE: 'drink_h2o_last_completed_date',
-    HISTORY: 'drink_h2o_history' // Map of 'YYYY-MM-DD' => { intake: number, goal: number, completed: boolean }
+    HISTORY: 'drink_h2o_history',
+    REMINDERS_ENABLED: 'drink_h2o_reminders_enabled',
+    REMINDER_INTERVAL: 'drink_h2o_reminder_interval'
   };
 
   // Default Profile Configuration
@@ -52,13 +59,28 @@
     lastCompletedDate: null,
     celebratedToday: false,
     history: {},
-    calendarViewDate: new Date(), // Year & Month currently displayed in calendar
-    selectedCalendarDate: null
+    calendarViewDate: new Date(),
+    selectedCalendarDate: null,
+    selectedDrink: { type: 'Water', icon: '💧' },
+    remindersEnabled: false,
+    reminderIntervalMinutes: 60
   };
+
+  let reminderTimerId = null;
 
   // DOM Elements
   const elements = {
+    // Header & Theme
     currentDateDisplay: document.getElementById('currentDateDisplay'),
+    streakBadge: document.getElementById('streakBadge'),
+    streakCount: document.getElementById('streakCount'),
+    quickStreakResetBtn: document.getElementById('quickStreakResetBtn'),
+    profileModalBtn: document.getElementById('profileModalBtn'),
+    themeToggleBtn: document.getElementById('themeToggleBtn'),
+    themeIcon: document.getElementById('themeIcon'),
+    confettiCanvas: document.getElementById('confettiCanvas'),
+
+    // Goal & Circular Wave Tracker
     goalDisplay: document.getElementById('goalDisplay'),
     goalFormulaNote: document.getElementById('goalFormulaNote'),
     completionBadge: document.getElementById('completionBadge'),
@@ -67,6 +89,7 @@
     goalInput: document.getElementById('goalInput'),
     recalcFromProfileBtn: document.getElementById('recalcFromProfileBtn'),
     cancelGoalBtn: document.getElementById('cancelGoalBtn'),
+    circularMeter: document.getElementById('circularMeter'),
     waveContainer: document.getElementById('waveContainer'),
     percentText: document.getElementById('percentText'),
     currentIntakeText: document.getElementById('currentIntakeText'),
@@ -74,37 +97,48 @@
     glassesCount: document.getElementById('glassesCount'),
     statusMessage: document.getElementById('statusMessage'),
     logCount: document.getElementById('logCount'),
+
+    // Drink Types & Action Logging
+    selectedDrinkIndicator: document.getElementById('selectedDrinkIndicator'),
+    activeDrinkName: document.getElementById('activeDrinkName'),
+    drinkTagButtons: document.querySelectorAll('.drink-tag-btn'),
+    presetButtons: document.querySelectorAll('.btn-preset'),
     customLogForm: document.getElementById('customLogForm'),
     customAmountInput: document.getElementById('customAmountInput'),
+    addCustomBtn: document.getElementById('addCustomBtn'),
+    chipButtons: document.querySelectorAll('.chip-btn'),
     undoBtn: document.getElementById('undoBtn'),
     resetDayBtn: document.getElementById('resetDayBtn'),
+
+    // Calendar
+    calPrevMonthBtn: document.getElementById('calPrevMonthBtn'),
+    calNextMonthBtn: document.getElementById('calNextMonthBtn'),
+    calTodayBtn: document.getElementById('calTodayBtn'),
+    calMonthYearLabel: document.getElementById('calMonthYearLabel'),
+    calendarDaysGrid: document.getElementById('calendarDaysGrid'),
+    calDetailDate: document.getElementById('calDetailDate'),
+    calDetailStats: document.getElementById('calDetailStats'),
+    calDetailBadge: document.getElementById('calDetailBadge'),
+
+    // Log History
     logList: document.getElementById('logList'),
     emptyLogState: document.getElementById('emptyLogState'),
     totalLoggedBadge: document.getElementById('totalLoggedBadge'),
-    themeToggleBtn: document.getElementById('themeToggleBtn'),
-    themeIcon: document.getElementById('themeIcon'),
     toast: document.getElementById('toast'),
-    presetButtons: document.querySelectorAll('.btn-preset'),
 
-    // Streak & Quick Reset Elements
-    streakBadge: document.getElementById('streakBadge'),
-    streakCount: document.getElementById('streakCount'),
-    quickStreakResetBtn: document.getElementById('quickStreakResetBtn'),
-
-    // Confirmation Modal for Streak Reset
-    resetStreakModal: document.getElementById('resetStreakModal'),
-    modalCurrentStreakCount: document.getElementById('modalCurrentStreakCount'),
-    cancelResetStreakBtn: document.getElementById('cancelResetStreakBtn'),
-    confirmResetStreakBtn: document.getElementById('confirmResetStreakBtn'),
-
-    // Congratulations Modal Elements
+    // Congratulations Modal
     congratsModal: document.getElementById('congratsModal'),
     closeCongratsBtn: document.getElementById('closeCongratsBtn'),
     congratsStreakDisplay: document.getElementById('congratsStreakDisplay'),
     congratsIntakeText: document.getElementById('congratsIntakeText'),
 
-    // Profile Modal Elements
-    profileModalBtn: document.getElementById('profileModalBtn'),
+    // Reset Streak Confirmation Modal
+    resetStreakModal: document.getElementById('resetStreakModal'),
+    modalCurrentStreakCount: document.getElementById('modalCurrentStreakCount'),
+    cancelResetStreakBtn: document.getElementById('cancelResetStreakBtn'),
+    confirmResetStreakBtn: document.getElementById('confirmResetStreakBtn'),
+
+    // Profile & Settings Modal
     profileModal: document.getElementById('profileModal'),
     closeProfileModalBtn: document.getElementById('closeProfileModalBtn'),
     cancelProfileBtn: document.getElementById('cancelProfileBtn'),
@@ -112,7 +146,15 @@
     profileModalStreakCount: document.getElementById('profileModalStreakCount'),
     modalResetStreakBtn: document.getElementById('modalResetStreakBtn'),
 
-    // Profile Inputs & Previews
+    // Browser Reminders Controls
+    reminderToggle: document.getElementById('reminderToggle'),
+    reminderOptions: document.getElementById('reminderOptions'),
+    reminderIntervalSelect: document.getElementById('reminderIntervalSelect'),
+    testReminderBtn: document.getElementById('testReminderBtn'),
+    reminderStatusText: document.getElementById('reminderStatusText'),
+    reminderPermStatus: document.getElementById('reminderPermStatus'),
+
+    // Profile Inputs & Calculation Previews
     previewGoalMl: document.getElementById('previewGoalMl'),
     previewGoalLiters: document.getElementById('previewGoalLiters'),
     previewGlasses: document.getElementById('previewGlasses'),
@@ -132,17 +174,7 @@
     profSteps: document.getElementById('profSteps'),
     overrideGoalCheck: document.getElementById('overrideGoalCheck'),
     customGoalFieldWrapper: document.getElementById('customGoalFieldWrapper'),
-    customGoalInput: document.getElementById('customGoalInput'),
-
-    // Calendar Elements
-    calPrevMonthBtn: document.getElementById('calPrevMonthBtn'),
-    calNextMonthBtn: document.getElementById('calNextMonthBtn'),
-    calTodayBtn: document.getElementById('calTodayBtn'),
-    calMonthYearLabel: document.getElementById('calMonthYearLabel'),
-    calendarDaysGrid: document.getElementById('calendarDaysGrid'),
-    calDetailDate: document.getElementById('calDetailDate'),
-    calDetailStats: document.getElementById('calDetailStats'),
-    calDetailBadge: document.getElementById('calDetailBadge')
+    customGoalInput: document.getElementById('customGoalInput')
   };
 
   // Web Audio Context & Sound Synthesis
@@ -150,29 +182,30 @@
   function getAudioContext() {
     if (!audioCtx) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new AudioContextClass();
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
     }
-    if (audioCtx.state === 'suspended') {
+    if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume();
     }
     return audioCtx;
   }
 
-  // Water Droplet Sound
   function playWaterDropSound() {
     try {
       const ctx = getAudioContext();
+      if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
       osc.type = 'sine';
       const now = ctx.currentTime;
+      osc.frequency.setValueAtTime(580, now);
+      osc.frequency.exponentialRampToValueAtTime(1450, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.18);
 
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
-      osc.frequency.exponentialRampToValueAtTime(950, now + 0.18);
-
-      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
       osc.connect(gain);
@@ -180,15 +213,13 @@
 
       osc.start(now);
       osc.stop(now + 0.22);
-    } catch (e) {
-      // Audio autoplay policy catch
-    }
+    } catch (e) {}
   }
 
-  // Celebratory Chime Sound
   function playCelebrationSound() {
     try {
       const ctx = getAudioContext();
+      if (!ctx) return;
       const now = ctx.currentTime;
       const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
 
@@ -208,9 +239,7 @@
         osc.start(now + index * 0.1);
         osc.stop(now + index * 0.1 + 0.4);
       });
-    } catch (e) {
-      // Audio catch
-    }
+    } catch (e) {}
   }
 
   // Toast Notification Helper
@@ -222,7 +251,7 @@
     clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => {
       elements.toast.classList.remove('show');
-    }, 2400);
+    }, 2500);
   }
 
   // Date Formatting Helpers (YYYY-MM-DD)
@@ -293,30 +322,305 @@
   }
 
   // ==========================================================================
-  // Feature 1: Automatic Daily Intake Reset (New Day Logic)
+  // Ripple Effect Helper for Buttons
   // ==========================================================================
-  /**
-   * Checks the stored date against today's date whenever the app is opened or active.
-   * If a new calendar day has started:
-   *  - Reset current intake to 0 ml.
-   *  - Keep the user's daily goal target intact.
-   *  - Evaluate previous day: If the goal was NOT reached yesterday, break/reset streak counter to 0.
-   */
+  function createRipple(event) {
+    const button = event.currentTarget;
+    if (!button) return;
+
+    const circle = document.createElement('span');
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+    const rect = button.getBoundingClientRect();
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${event.clientX - rect.left - radius}px`;
+    circle.style.top = `${event.clientY - rect.top - radius}px`;
+    circle.classList.add('ripple-circle');
+
+    const existingRipple = button.querySelector('.ripple-circle');
+    if (existingRipple) {
+      existingRipple.remove();
+    }
+
+    button.appendChild(circle);
+    setTimeout(() => {
+      circle.remove();
+    }, 600);
+  }
+
+  function setupRipples() {
+    const buttons = document.querySelectorAll('.ripple-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', createRipple);
+    });
+  }
+
+  // ==========================================================================
+  // Lightweight Canvas Confetti Explosion
+  // ==========================================================================
+  let confettiParticles = [];
+  let confettiAnimFrame = null;
+
+  function launchConfetti() {
+    const canvas = elements.confettiCanvas;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    confettiParticles = [];
+    const colors = ['#0284c7', '#38bdf8', '#06b6d4', '#f97316', '#fbbf24', '#10b981', '#ec4899', '#8b5cf6'];
+    const particleCount = 90;
+
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 9 + 4;
+      confettiParticles.push({
+        x: width / 2,
+        y: height / 2 - 40,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 3,
+        size: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 12,
+        wobble: Math.random() * 10,
+        wobbleSpeed: Math.random() * 0.1 + 0.05,
+        opacity: 1,
+        shape: Math.random() > 0.4 ? 'rect' : 'circle'
+      });
+    }
+
+    if (confettiAnimFrame) {
+      cancelAnimationFrame(confettiAnimFrame);
+    }
+
+    let startTime = performance.now();
+
+    function renderConfetti(now) {
+      const elapsed = now - startTime;
+      ctx.clearRect(0, 0, width, height);
+
+      let activeParticles = 0;
+
+      confettiParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.22; // Gravity
+        p.vx *= 0.985; // Air drag
+        p.rotation += p.rotationSpeed;
+        p.wobble += p.wobbleSpeed;
+
+        if (elapsed > 1800) {
+          p.opacity = Math.max(0, p.opacity - 0.025);
+        }
+
+        if (p.opacity > 0 && p.y < height + 40) {
+          activeParticles++;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.opacity;
+          ctx.fillStyle = p.color;
+
+          const wobbleScale = Math.sin(p.wobble);
+
+          if (p.shape === 'rect') {
+            ctx.fillRect(-p.size / 2, (-p.size / 2) * wobbleScale, p.size, p.size * wobbleScale);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      });
+
+      if (activeParticles > 0 && elapsed < 3500) {
+        confettiAnimFrame = requestAnimationFrame(renderConfetti);
+      } else {
+        ctx.clearRect(0, 0, width, height);
+      }
+    }
+
+    confettiAnimFrame = requestAnimationFrame(renderConfetti);
+  }
+
+  // ==========================================================================
+  // Browser Hydration Reminders
+  // ==========================================================================
+  function initReminderControls() {
+    const isSupported = 'Notification' in window;
+    if (!isSupported) {
+      elements.reminderPermStatus.textContent = 'Not supported in browser';
+      elements.reminderToggle.disabled = true;
+      return;
+    }
+
+    // Load saved settings
+    const savedEnabled = localStorage.getItem(STORAGE_KEYS.REMINDERS_ENABLED) === 'true';
+    const savedInterval = parseInt(localStorage.getItem(STORAGE_KEYS.REMINDER_INTERVAL), 10) || 60;
+
+    state.remindersEnabled = savedEnabled;
+    state.reminderIntervalMinutes = savedInterval;
+
+    elements.reminderToggle.checked = savedEnabled;
+    elements.reminderIntervalSelect.value = savedInterval;
+
+    updateReminderUI();
+
+    if (savedEnabled && Notification.permission === 'granted') {
+      scheduleReminders();
+    }
+  }
+
+  function updateReminderUI() {
+    const isGranted = Notification.permission === 'granted';
+    const isDenied = Notification.permission === 'denied';
+
+    if (state.remindersEnabled && isGranted) {
+      elements.reminderOptions.classList.remove('hidden');
+      elements.reminderStatusText.textContent = `Active every ${state.reminderIntervalMinutes}m`;
+      elements.reminderPermStatus.textContent = 'Active 🔔';
+    } else if (state.remindersEnabled && !isGranted) {
+      elements.reminderOptions.classList.remove('hidden');
+      elements.reminderStatusText.textContent = 'Permission needed';
+      elements.reminderPermStatus.textContent = isDenied ? 'Permission denied' : 'Awaiting prompt';
+    } else {
+      elements.reminderOptions.classList.add('hidden');
+      elements.reminderStatusText.textContent = 'Get periodic browser alerts';
+      elements.reminderPermStatus.textContent = isGranted ? 'Granted' : 'Inactive';
+    }
+  }
+
+  async function handleReminderToggleChange() {
+    if (!('Notification' in window)) {
+      showToast('Notifications are not supported by your browser.');
+      elements.reminderToggle.checked = false;
+      return;
+    }
+
+    if (elements.reminderToggle.checked) {
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          state.remindersEnabled = true;
+          localStorage.setItem(STORAGE_KEYS.REMINDERS_ENABLED, 'true');
+          scheduleReminders();
+          updateReminderUI();
+          showToast('Hydration reminders enabled! 🔔');
+          sendBrowserNotification('Drink H2O Reminders On! 💧', 'We will gently remind you to drink water regularly.');
+        } else {
+          state.remindersEnabled = false;
+          elements.reminderToggle.checked = false;
+          localStorage.setItem(STORAGE_KEYS.REMINDERS_ENABLED, 'false');
+          updateReminderUI();
+          showToast('Notification permission was not granted.');
+        }
+      } else if (Notification.permission === 'granted') {
+        state.remindersEnabled = true;
+        localStorage.setItem(STORAGE_KEYS.REMINDERS_ENABLED, 'true');
+        scheduleReminders();
+        updateReminderUI();
+        showToast('Hydration reminders activated! 🔔');
+      } else {
+        // Denied
+        state.remindersEnabled = false;
+        elements.reminderToggle.checked = false;
+        localStorage.setItem(STORAGE_KEYS.REMINDERS_ENABLED, 'false');
+        updateReminderUI();
+        showToast('Notifications are blocked in browser settings.');
+      }
+    } else {
+      state.remindersEnabled = false;
+      localStorage.setItem(STORAGE_KEYS.REMINDERS_ENABLED, 'false');
+      if (reminderTimerId) {
+        clearInterval(reminderTimerId);
+        reminderTimerId = null;
+      }
+      updateReminderUI();
+      showToast('Hydration reminders turned off.');
+    }
+  }
+
+  function scheduleReminders() {
+    if (reminderTimerId) {
+      clearInterval(reminderTimerId);
+      reminderTimerId = null;
+    }
+
+    if (!state.remindersEnabled || Notification.permission !== 'granted') return;
+
+    const intervalMs = state.reminderIntervalMinutes * 60 * 1000;
+    reminderTimerId = setInterval(() => {
+      const remaining = Math.max(0, state.dailyGoal - state.currentIntake);
+      if (remaining > 0) {
+        sendBrowserNotification(
+          'Time to Hydrate! 💧',
+          `Stay refreshed! You have ${remaining} ml left to reach today's goal.`
+        );
+      }
+    }, intervalMs);
+  }
+
+  function sendBrowserNotification(title, body) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    try {
+      new Notification(title, {
+        body: body,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%230284c7"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>'
+      });
+    } catch (e) {
+      // Catch mobile/iframe restrictions
+    }
+  }
+
+  function triggerTestReminder() {
+    if (!('Notification' in window)) {
+      showToast('Notifications are not supported in this environment.');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      sendBrowserNotification('Drink H2O Test Reminder 💧', 'Hydration reminders are working great!');
+      showToast('Test notification dispatched! Check your desktop/banner.');
+    } else {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          sendBrowserNotification('Drink H2O Test Reminder 💧', 'Hydration alerts are active!');
+          showToast('Test notification dispatched!');
+          state.remindersEnabled = true;
+          elements.reminderToggle.checked = true;
+          localStorage.setItem(STORAGE_KEYS.REMINDERS_ENABLED, 'true');
+          scheduleReminders();
+          updateReminderUI();
+        } else {
+          showToast('Please enable notifications in your browser.');
+        }
+      });
+    }
+  }
+
+  // ==========================================================================
+  // Daily Date Rollover & Automatic Reset
+  // ==========================================================================
   function checkAndHandleDateRollover() {
     const today = getTodayDateString();
     const storedDate = localStorage.getItem(STORAGE_KEYS.LAST_DATE);
     const yesterday = getYesterdayDateString();
 
     if (!storedDate) {
-      // First run: save today as last date
       localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
       return;
     }
 
     if (storedDate !== today) {
-      // New Calendar Day has started!
-
-      // 1. Archive the previously stored day's progress into historical record if needed
+      // Archive previous day's intake in history
       if (storedDate && !state.history[storedDate] && state.currentIntake > 0) {
         state.history[storedDate] = {
           intake: state.currentIntake,
@@ -325,38 +629,33 @@
         };
       }
 
-      // 2. Evaluate previous day goal achievement
-      // Check if the goal was reached on the immediately preceding day (yesterday)
+      // Check if goal was met yesterday to preserve streak
       const lastCompleted = localStorage.getItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
       const yesterdayRecord = state.history[yesterday];
       const reachedYesterday = (lastCompleted === yesterday) || (yesterdayRecord && yesterdayRecord.completed);
 
       if (!reachedYesterday) {
-        // Goal was NOT reached yesterday -> break/reset streak counter to 0
         state.streak = 0;
         localStorage.setItem(STORAGE_KEYS.STREAK, '0');
       }
 
-      // 3. Reset current water intake to 0 ml and reset today's logs
+      // Reset today's intake & logs
       state.currentIntake = 0;
       state.logs = [];
       state.celebratedToday = false;
 
-      // 4. Update the stored date to today
       localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
       localStorage.setItem(STORAGE_KEYS.INTAKE, '0');
       localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([]));
       localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history));
 
-      // 5. Keep user's daily goal intact (state.dailyGoal remains unchanged)
       saveState();
       updateUI();
       renderCalendar();
-      showToast("A new day has started! Intake reset to 0 ml 💧");
+      showToast('A new day has started! Intake reset to 0 ml 💧');
     }
   }
 
-  // Sync today's current intake into history for real-time calendar visualization
   function syncTodayHistory() {
     const today = getTodayDateString();
     state.history[today] = {
@@ -367,7 +666,7 @@
     localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history));
   }
 
-  // Load state from localStorage
+  // Load State from LocalStorage
   function loadState() {
     const today = getTodayDateString();
     const storedDate = localStorage.getItem(STORAGE_KEYS.LAST_DATE);
@@ -385,7 +684,7 @@
     }
     state.profile.calculatedGoal = calculateHydrationGoal(state.profile);
 
-    // Daily Goal
+    // Goal
     const savedGoal = localStorage.getItem(STORAGE_KEYS.GOAL);
     if (savedGoal && !isNaN(parseInt(savedGoal, 10))) {
       state.dailyGoal = parseInt(savedGoal, 10);
@@ -403,7 +702,7 @@
       state.theme = 'dark';
     }
 
-    // Historical Records
+    // History
     const savedHistory = localStorage.getItem(STORAGE_KEYS.HISTORY);
     if (savedHistory) {
       try {
@@ -415,17 +714,15 @@
       state.history = {};
     }
 
-    // Streak & Last Completed Date
+    // Streak
     const savedStreak = parseInt(localStorage.getItem(STORAGE_KEYS.STREAK), 10) || 0;
     const lastCompleted = localStorage.getItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
     state.streak = savedStreak;
     state.lastCompletedDate = lastCompleted;
 
-    // Check if new day rollover occurs
     if (storedDate && storedDate !== today) {
       checkAndHandleDateRollover();
     } else {
-      // Current day continued
       const savedIntake = localStorage.getItem(STORAGE_KEYS.INTAKE);
       state.currentIntake = savedIntake ? parseInt(savedIntake, 10) || 0 : 0;
 
@@ -445,7 +742,6 @@
     syncTodayHistory();
   }
 
-  // Save current state to localStorage
   function saveState() {
     localStorage.setItem(STORAGE_KEYS.GOAL, state.dailyGoal.toString());
     localStorage.setItem(STORAGE_KEYS.INTAKE, state.currentIntake.toString());
@@ -471,7 +767,6 @@
     renderCalendar();
 
     if (state.currentIntake >= state.dailyGoal) {
-      // Check if this is the first completion for today
       if (state.lastCompletedDate !== today) {
         if (state.lastCompletedDate === yesterday) {
           state.streak += 1;
@@ -482,7 +777,6 @@
         saveState();
       }
 
-      // Show congratulations modal if not yet triggered today
       if (!state.celebratedToday) {
         state.celebratedToday = true;
         showCongratsModal();
@@ -490,7 +784,6 @@
     }
   }
 
-  // Congratulations Modal
   function showCongratsModal() {
     elements.congratsStreakDisplay.textContent = `${state.streak} ${state.streak === 1 ? 'Day' : 'Days'}`;
     elements.congratsIntakeText.textContent = `${state.currentIntake} ml`;
@@ -498,6 +791,9 @@
     playCelebrationSound();
     elements.congratsModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+
+    // Launch lightweight dynamic confetti explosion
+    launchConfetti();
   }
 
   function closeCongratsModal() {
@@ -506,12 +802,8 @@
   }
 
   // ==========================================================================
-  // Feature 2: Manual Streak Reset Feature
+  // Manual Streak Reset
   // ==========================================================================
-  /**
-   * Prompts the user with confirmation before resetting their streak to 0.
-   * Updates state, localStorage, and all UI elements immediately.
-   */
   function promptResetStreak() {
     elements.modalCurrentStreakCount.textContent = state.streak;
     elements.resetStreakModal.classList.remove('hidden');
@@ -532,11 +824,13 @@
     closeResetStreakModal();
     updateUI();
     renderCalendar();
-    showToast('Streak has been reset back to 0 days.');
+    showToast('Streak reset back to 0 days.');
   }
 
-  // Add water intake
-  function addWater(amount, label = 'Water') {
+  // ==========================================================================
+  // Water Logging & Fluid Types
+  // ==========================================================================
+  function addWater(amount, label = 'Water', drinkIcon = '💧') {
     if (amount <= 0) return;
 
     state.currentIntake += amount;
@@ -547,6 +841,7 @@
       id: Date.now(),
       amount: amount,
       label: label,
+      drinkIcon: drinkIcon,
       time: timeStr
     });
 
@@ -554,34 +849,35 @@
     saveState();
     updateUI();
     playWaterDropSound();
-    showToast(`+${amount} ml logged! Keep going 💧`);
+    showToast(`+${amount} ml ${label} logged! 💧`);
 
-    // Check if daily goal reached
     checkGoalMilestone();
   }
 
-  // Subtract water (undo last intake)
-  function subtractWater(amount = 250) {
-    if (state.currentIntake <= 0) {
-      showToast('Intake is already 0 ml.');
+  function undoLastLog() {
+    if (state.logs.length === 0) {
+      if (state.currentIntake > 0) {
+        state.currentIntake = Math.max(0, state.currentIntake - 250);
+        syncTodayHistory();
+        saveState();
+        updateUI();
+        renderCalendar();
+        showToast('Subtracted 250 ml.');
+      } else {
+        showToast('No logs to undo.');
+      }
       return;
     }
 
-    const actualReduction = Math.min(state.currentIntake, amount);
-    state.currentIntake -= actualReduction;
-
-    if (state.logs.length > 0) {
-      state.logs.shift();
-    }
-
+    const removed = state.logs.shift();
+    state.currentIntake = Math.max(0, state.currentIntake - removed.amount);
     syncTodayHistory();
     saveState();
     updateUI();
     renderCalendar();
-    showToast(`-${actualReduction} ml removed.`);
+    showToast(`Undid ${removed.label} (+${removed.amount} ml)`);
   }
 
-  // Delete individual log entry
   function deleteLog(id) {
     const index = state.logs.findIndex(item => item.id === id);
     if (index !== -1) {
@@ -591,18 +887,17 @@
       saveState();
       updateUI();
       renderCalendar();
-      showToast(`Removed entry of ${removed.amount} ml.`);
+      showToast(`Deleted ${removed.amount} ml entry.`);
     }
   }
 
-  // Reset today's intake
   function resetDay() {
     if (state.currentIntake === 0 && state.logs.length === 0) {
       showToast("Today's progress is already empty.");
       return;
     }
 
-    const confirmReset = confirm("Are you sure you want to reset today's water intake back to 0 ml?");
+    const confirmReset = confirm("Reset today's water intake back to 0 ml?");
     if (confirmReset) {
       state.currentIntake = 0;
       state.logs = [];
@@ -611,73 +906,69 @@
       saveState();
       updateUI();
       renderCalendar();
-      showToast("Today's intake has been reset.");
+      showToast("Today's intake reset to 0 ml.");
     }
   }
 
+  function selectDrinkType(type, icon) {
+    state.selectedDrink = { type, icon };
+    elements.activeDrinkName.textContent = `${type} ${icon}`;
+
+    elements.drinkTagButtons.forEach(btn => {
+      const btnType = btn.dataset.type;
+      const isActive = btnType === type;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-checked', isActive.toString());
+    });
+  }
+
   // ==========================================================================
-  // Feature 3: Live Interactive Calendar
+  // Calendar Rendering
   // ==========================================================================
-  /**
-   * Renders the dynamic calendar for the current viewing month:
-   * - Highlights today's date clearly.
-   * - Automatically marks completed goal days with a fire icon (🔥) based on historical data.
-   * - Handles navigation controls (< Previous Month / Next Month >) and day inspection.
-   */
   function renderCalendar() {
     const viewYear = state.calendarViewDate.getFullYear();
     const viewMonth = state.calendarViewDate.getMonth();
 
-    // Month & Year Label (e.g. "September 2026")
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     elements.calMonthYearLabel.textContent = `${monthNames[viewMonth]} ${viewYear}`;
 
-    // Clear previous grid
     elements.calendarDaysGrid.innerHTML = '';
 
-    // First day of month (0 = Sunday, 1 = Monday, etc.)
     const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
-    // Total days in current month
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    // Days in previous month
     const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate();
-
     const todayStr = getTodayDateString();
 
-    // 1. Render padding days from previous month
+    // 1. Previous month padding days
     for (let x = firstDayIndex; x > 0; x--) {
       const dayNum = prevMonthDays - x + 1;
       const prevDate = new Date(viewYear, viewMonth - 1, dayNum);
       const dateStr = getFormattedDate(prevDate);
-
       const cell = createCalendarCell(dayNum, dateStr, true);
       elements.calendarDaysGrid.appendChild(cell);
     }
 
-    // 2. Render days for current month
+    // 2. Current month days
     for (let day = 1; day <= daysInMonth; day++) {
       const thisDate = new Date(viewYear, viewMonth, day);
       const dateStr = getFormattedDate(thisDate);
-
       const cell = createCalendarCell(day, dateStr, false);
       elements.calendarDaysGrid.appendChild(cell);
     }
 
-    // 3. Render padding days from next month to complete standard 7-col grid
+    // 3. Next month padding days
     const totalCells = firstDayIndex + daysInMonth;
     const remainingCells = (7 - (totalCells % 7)) % 7;
     for (let i = 1; i <= remainingCells; i++) {
       const nextDate = new Date(viewYear, viewMonth + 1, i);
       const dateStr = getFormattedDate(nextDate);
-
       const cell = createCalendarCell(i, dateStr, true);
       elements.calendarDaysGrid.appendChild(cell);
     }
 
-    // Update selected date inspector
     updateCalendarInspector(state.selectedCalendarDate || todayStr);
   }
 
@@ -702,7 +993,6 @@
       cell.classList.add('selected');
     }
 
-    // Check history or today for goal completion
     const dayData = (dateStr === todayStr)
       ? { intake: state.currentIntake, goal: state.dailyGoal, completed: state.currentIntake >= state.dailyGoal }
       : state.history[dateStr];
@@ -746,7 +1036,6 @@
 
     const todayStr = getTodayDateString();
     const isToday = dateStr === todayStr;
-
     const parts = dateStr.split('-');
     const displayDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     const formattedDate = displayDate.toLocaleDateString(undefined, {
@@ -779,7 +1068,9 @@
     }
   }
 
+  // ==========================================================================
   // Update UI Elements
+  // ==========================================================================
   function updateUI() {
     const goal = state.dailyGoal;
     const intake = state.currentIntake;
@@ -787,36 +1078,42 @@
     const remaining = Math.max(0, goal - intake);
     const glasses = (intake / 250).toFixed(1);
 
-    // Goal Display & Note
+    // Goal Display
     elements.goalDisplay.textContent = `${goal} ml`;
     if (state.profile.isOverridden) {
       elements.goalFormulaNote.textContent = 'Custom manual goal override';
     } else {
-      elements.goalFormulaNote.textContent = 'Personalized target based on your profile';
+      elements.goalFormulaNote.textContent = 'Personalized target based on profile';
     }
     elements.completionBadge.textContent = `${percent}%`;
 
-    // Streak UI in Header and Modals
+    // Streak UI
     elements.streakCount.textContent = state.streak;
     elements.profileModalStreakCount.textContent = `${state.streak} ${state.streak === 1 ? 'Day' : 'Days'} Consecutive`;
 
     if (state.streak > 0) {
       elements.streakBadge.classList.add('active-streak');
-      elements.streakBadge.setAttribute('title', `${state.streak} consecutive days hydration goal reached!`);
+      elements.streakBadge.setAttribute('title', `${state.streak} consecutive days goal reached!`);
     } else {
       elements.streakBadge.classList.remove('active-streak');
-      elements.streakBadge.setAttribute('title', "Complete today's goal to begin your streak!");
+      elements.streakBadge.setAttribute('title', "Complete today's goal to build your streak!");
     }
 
-    // Meter & Waves
+    // Fluid Wave Animation & Progress
     elements.percentText.textContent = `${percent}%`;
     elements.currentIntakeText.textContent = `${intake} ml`;
-    elements.remainingText.textContent = remaining > 0 ? `${remaining} ml left` : 'Goal reached! 🎉';
+    elements.remainingText.textContent = remaining > 0 ? `${remaining} ml left` : 'Goal achieved! 🎉';
 
     const waveHeight = Math.min(100, Math.max(0, percent));
     elements.waveContainer.style.height = `${waveHeight}%`;
 
-    // Stats row
+    if (percent >= 100) {
+      elements.circularMeter.classList.add('goal-achieved');
+    } else {
+      elements.circularMeter.classList.remove('goal-achieved');
+    }
+
+    // Stats Row
     elements.glassesCount.textContent = glasses;
     elements.logCount.textContent = state.logs.length;
 
@@ -836,7 +1133,7 @@
     renderLogs();
   }
 
-  // Render log history items
+  // Render Log History Items with Drink Type Badges & Individual Delete Buttons
   function renderLogs() {
     elements.logList.innerHTML = '';
 
@@ -849,24 +1146,34 @@
         const li = document.createElement('li');
         li.className = 'log-item';
 
+        const icon = log.drinkIcon || '💧';
+        const label = log.label || 'Water';
+
         li.innerHTML = `
           <div class="log-info">
-            <span class="log-icon">💧</span>
+            <div class="log-icon-bubble">${icon}</div>
             <div>
               <div class="log-amount">+${log.amount} ml</div>
-              <div class="log-time">${log.label} • ${log.time}</div>
+              <div class="log-time">${label} • ${log.time}</div>
             </div>
           </div>
-          <button class="log-delete-btn" data-id="${log.id}" aria-label="Delete log entry" title="Delete log">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
+          <div class="log-item-actions">
+            <button class="log-delete-btn ripple-btn" data-id="${log.id}" aria-label="Delete entry of ${log.amount} ml" title="Delete entry">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
         `;
 
-        li.querySelector('.log-delete-btn').addEventListener('click', () => {
-          deleteLog(log.id);
+        const deleteBtn = li.querySelector('.log-delete-btn');
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          li.classList.add('deleting');
+          setTimeout(() => {
+            deleteLog(log.id);
+          }, 200);
         });
 
         elements.logList.appendChild(li);
@@ -875,7 +1182,7 @@
   }
 
   // ==========================================================================
-  // Profile Modal & Live Calculation Handling
+  // Profile Modal & Live Calculations
   // ==========================================================================
   function openProfileModal() {
     const prof = state.profile;
@@ -897,6 +1204,7 @@
     toggleCustomGoalVisibility(prof.isOverridden);
 
     updateProfilePreview();
+    updateReminderUI();
 
     elements.profileModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -994,12 +1302,14 @@
     updateUI();
     renderCalendar();
     closeProfileModal();
-    showToast(`Hydration goal updated to ${state.dailyGoal} ml! 💧`);
+    showToast(`Hydration target updated to ${state.dailyGoal} ml! 💧`);
 
     checkGoalMilestone();
   }
 
-  // Theme Handling
+  // ==========================================================================
+  // Theme Handling (Light / Dark)
+  // ==========================================================================
   function applyTheme(theme) {
     state.theme = theme;
     document.documentElement.setAttribute('data-theme', theme);
@@ -1017,10 +1327,12 @@
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
         `;
+        elements.themeToggleBtn.setAttribute('title', 'Switch to Light Mode');
       } else {
         elements.themeIcon.innerHTML = `
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         `;
+        elements.themeToggleBtn.setAttribute('title', 'Switch to Dark Mode');
       }
     }
     saveState();
@@ -1030,48 +1342,60 @@
     applyTheme(state.theme === 'dark' ? 'light' : 'dark');
   }
 
-  // Setup Event Listeners
+  // ==========================================================================
+  // Event Listeners Setup
+  // ==========================================================================
   function setupEventListeners() {
-    // Presets
-    elements.presetButtons.forEach(btn => {
+    // Drink Types Selection
+    elements.drinkTagButtons.forEach(btn => {
       btn.addEventListener('click', () => {
-        const amount = parseInt(btn.dataset.amount, 10);
-        const desc = btn.querySelector('.preset-desc')?.textContent || 'Water';
-        addWater(amount, desc);
+        const type = btn.dataset.type;
+        const icon = btn.dataset.icon;
+        selectDrinkType(type, icon);
       });
     });
 
-    // Custom Log Form
+    // Preset Buttons
+    elements.presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const amount = parseInt(btn.dataset.amount, 10);
+        const desc = `${state.selectedDrink.type} (${btn.querySelector('.preset-desc')?.textContent || 'Preset'})`;
+        addWater(amount, desc, state.selectedDrink.icon);
+      });
+    });
+
+    // Custom Log Form Submission
     elements.customLogForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const amount = parseInt(elements.customAmountInput.value, 10);
       if (amount && amount > 0) {
-        addWater(amount, 'Custom intake');
+        addWater(amount, `${state.selectedDrink.type}`, state.selectedDrink.icon);
         elements.customAmountInput.value = '';
       }
     });
 
-    // Secondary Actions
-    elements.undoBtn.addEventListener('click', () => {
-      subtractWater(250);
+    // Quick Increment Chips
+    elements.chipButtons.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const quickVal = parseInt(chip.dataset.quick, 10);
+        elements.customAmountInput.value = quickVal;
+        addWater(quickVal, `${state.selectedDrink.type}`, state.selectedDrink.icon);
+      });
     });
 
-    elements.resetDayBtn.addEventListener('click', () => {
-      resetDay();
-    });
+    // Undo & Reset Day
+    elements.undoBtn.addEventListener('click', undoLastLog);
+    elements.resetDayBtn.addEventListener('click', resetDay);
 
-    // Streak Reset Triggers
+    // Streak Reset Prompts
     elements.quickStreakResetBtn.addEventListener('click', promptResetStreak);
     elements.streakBadge.addEventListener('click', promptResetStreak);
     elements.modalResetStreakBtn.addEventListener('click', promptResetStreak);
 
-    // Confirmation Modal Actions
     elements.cancelResetStreakBtn.addEventListener('click', closeResetStreakModal);
     elements.confirmResetStreakBtn.addEventListener('click', executeStreakReset);
     elements.resetStreakModal.addEventListener('click', (e) => {
-      if (e.target === elements.resetStreakModal) {
-        closeResetStreakModal();
-      }
+      if (e.target === elements.resetStreakModal) closeResetStreakModal();
     });
 
     // Calendar Navigation
@@ -1114,7 +1438,7 @@
         updateUI();
         renderCalendar();
         elements.goalEditForm.classList.add('hidden');
-        showToast(`Target updated to ${newGoal} ml!`);
+        showToast(`Target set to ${newGoal} ml!`);
         checkGoalMilestone();
       }
     });
@@ -1136,23 +1460,32 @@
     // Congratulations Modal
     elements.closeCongratsBtn.addEventListener('click', closeCongratsModal);
     elements.congratsModal.addEventListener('click', (e) => {
-      if (e.target === elements.congratsModal) {
-        closeCongratsModal();
-      }
+      if (e.target === elements.congratsModal) closeCongratsModal();
     });
 
-    // Profile Modal Open & Close
+    // Profile Modal
     elements.profileModalBtn.addEventListener('click', openProfileModal);
     elements.closeProfileModalBtn.addEventListener('click', closeProfileModal);
     elements.cancelProfileBtn.addEventListener('click', closeProfileModal);
-
     elements.profileModal.addEventListener('click', (e) => {
-      if (e.target === elements.profileModal) {
-        closeProfileModal();
-      }
+      if (e.target === elements.profileModal) closeProfileModal();
     });
 
-    // Global Escape Key Listener for Modals
+    // Browser Reminders Events
+    elements.reminderToggle.addEventListener('change', handleReminderToggleChange);
+    elements.reminderIntervalSelect.addEventListener('change', (e) => {
+      const interval = parseInt(e.target.value, 10) || 60;
+      state.reminderIntervalMinutes = interval;
+      localStorage.setItem(STORAGE_KEYS.REMINDER_INTERVAL, interval.toString());
+      if (state.remindersEnabled) {
+        scheduleReminders();
+        updateReminderUI();
+        showToast(`Reminder interval set to ${interval} mins.`);
+      }
+    });
+    elements.testReminderBtn.addEventListener('click', triggerTestReminder);
+
+    // Escape Key Handler for Modals
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         if (!elements.congratsModal.classList.contains('hidden')) {
@@ -1165,19 +1498,19 @@
       }
     });
 
-    // Weight & Height unit toggles
+    // Unit Toggles
     elements.unitKgBtn.addEventListener('click', () => setWeightUnit('kg'));
     elements.unitLbsBtn.addEventListener('click', () => setWeightUnit('lbs'));
     elements.unitCmBtn.addEventListener('click', () => setHeightUnit('cm'));
     elements.unitFtBtn.addEventListener('click', () => setHeightUnit('ft'));
 
-    // Override checkbox
+    // Override Checkbox
     elements.overrideGoalCheck.addEventListener('change', (e) => {
       toggleCustomGoalVisibility(e.target.checked);
       updateProfilePreview();
     });
 
-    // Live calculation listeners for modal inputs
+    // Modal Live Preview Inputs
     const liveInputs = [
       elements.profAge,
       elements.profGender,
@@ -1197,13 +1530,12 @@
       }
     });
 
-    // Profile Form Submit
     elements.profileForm.addEventListener('submit', handleProfileSubmit);
 
     // Theme Toggle
     elements.themeToggleBtn.addEventListener('click', toggleTheme);
 
-    // Automatic New Day Event Triggers (Focus, Visibility, and Periodic Interval)
+    // Window Events for Date Rollover
     window.addEventListener('focus', checkAndHandleDateRollover);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
@@ -1211,21 +1543,23 @@
       }
     });
 
-    // Periodic check every 60 seconds
     setInterval(checkAndHandleDateRollover, 60000);
+
+    // Setup active ripples on all clickable action buttons
+    setupRipples();
   }
 
-  // Format today's date in header
   function initHeaderDate() {
     const options = { weekday: 'long', month: 'short', day: 'numeric' };
     elements.currentDateDisplay.textContent = new Date().toLocaleDateString(undefined, options);
   }
 
-  // Initialize App
+  // App Initialization
   function init() {
     initHeaderDate();
     loadState();
     applyTheme(state.theme);
+    initReminderControls();
     setupEventListeners();
     updateUI();
     renderCalendar();
