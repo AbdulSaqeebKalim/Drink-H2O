@@ -5,7 +5,7 @@
  * 2. 1-second cubic-bezier smooth height transition
  * 3. Dynamic surface disturbance / splash rippling on new intake
  * 4. Perfect glassmorphism circular clipping with high-contrast text pill
- * 5. Full drink types, streak tracking, browser reminders & interactive calendar
+ * 5. Water intake presets, streak tracking, browser reminders & interactive calendar
  */
 
 (() => {
@@ -99,7 +99,6 @@
     customLogForm: document.getElementById('customLogForm'),
     customAmountInput: document.getElementById('customAmountInput'),
     addCustomBtn: document.getElementById('addCustomBtn'),
-    chipButtons: document.querySelectorAll('.chip-btn'),
     undoBtn: document.getElementById('undoBtn'),
     resetDayBtn: document.getElementById('resetDayBtn'),
 
@@ -732,7 +731,14 @@
 
       const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
       try {
-        state.logs = savedLogs ? JSON.parse(savedLogs) : [];
+        const parsed = savedLogs ? JSON.parse(savedLogs) : [];
+        state.logs = Array.isArray(parsed)
+          ? parsed.map(item => ({
+              id: item.id || Date.now(),
+              amount: typeof item.amount === 'number' ? item.amount : parseInt(item.amount, 10) || 0,
+              time: item.time || ''
+            }))
+          : [];
       } catch (e) {
         state.logs = [];
       }
@@ -1148,11 +1154,8 @@
 
         li.innerHTML = `
           <div class="log-info">
-            <div class="log-icon-bubble">💧</div>
-            <div>
-              <div class="log-amount">+${log.amount} ml</div>
-              <div class="log-time">${log.time}</div>
-            </div>
+            <div class="log-amount">+${log.amount} ml</div>
+            <div class="log-time">${log.time}</div>
           </div>
           <div class="log-item-actions">
             <button class="log-delete-btn ripple-btn" data-id="${log.id}" aria-label="Delete entry of ${log.amount} ml" title="Delete entry">
@@ -1359,15 +1362,6 @@
         addWater(amount);
         elements.customAmountInput.value = '';
       }
-    });
-
-    // Quick Increment Chips
-    elements.chipButtons.forEach(chip => {
-      chip.addEventListener('click', () => {
-        const quickVal = parseInt(chip.dataset.quick, 10);
-        elements.customAmountInput.value = quickVal;
-        addWater(quickVal);
-      });
     });
 
     // Undo & Reset Day
