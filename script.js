@@ -56,7 +56,6 @@
     history: {},
     calendarViewDate: new Date(),
     selectedCalendarDate: null,
-    selectedDrink: { type: 'Water', icon: '💧' },
     remindersEnabled: false,
     reminderIntervalMinutes: 60
   };
@@ -95,10 +94,7 @@
     statusMessage: document.getElementById('statusMessage'),
     logCount: document.getElementById('logCount'),
 
-    // Drink Types & Action Logging
-    selectedDrinkIndicator: document.getElementById('selectedDrinkIndicator'),
-    activeDrinkName: document.getElementById('activeDrinkName'),
-    drinkTagButtons: document.querySelectorAll('.drink-tag-btn'),
+    // Action Logging
     presetButtons: document.querySelectorAll('.btn-preset'),
     customLogForm: document.getElementById('customLogForm'),
     customAmountInput: document.getElementById('customAmountInput'),
@@ -836,7 +832,7 @@
   // ==========================================================================
   // Water Logging & Fluid Hydrodynamics
   // ==========================================================================
-  function addWater(amount, label = 'Water', drinkIcon = '💧') {
+  function addWater(amount) {
     if (amount <= 0) return;
 
     state.currentIntake += amount;
@@ -846,17 +842,15 @@
     state.logs.unshift({
       id: Date.now(),
       amount: amount,
-      label: label,
-      drinkIcon: drinkIcon,
       time: timeStr
     });
 
     syncTodayHistory();
     saveState();
     updateUI();
-    triggerWaterDisturbance(); // Realistic wave crest disturbance & liquid container bounce
+    triggerWaterDisturbance(); // Wave crest disturbance & liquid container bounce
     playWaterDropSound();
-    showToast(`+${amount} ml ${label} logged! 💧`);
+    showToast(`+${amount} ml water logged! 💧`);
 
     checkGoalMilestone();
   }
@@ -884,7 +878,7 @@
     updateUI();
     triggerWaterDisturbance();
     renderCalendar();
-    showToast(`Undid ${removed.label} (+${removed.amount} ml)`);
+    showToast(`Undid +${removed.amount} ml water`);
   }
 
   function deleteLog(id) {
@@ -919,18 +913,6 @@
       renderCalendar();
       showToast("Today's intake reset to 0 ml.");
     }
-  }
-
-  function selectDrinkType(type, icon) {
-    state.selectedDrink = { type, icon };
-    elements.activeDrinkName.textContent = `${type} ${icon}`;
-
-    elements.drinkTagButtons.forEach(btn => {
-      const btnType = btn.dataset.type;
-      const isActive = btnType === type;
-      btn.classList.toggle('active', isActive);
-      btn.setAttribute('aria-checked', isActive.toString());
-    });
   }
 
   // ==========================================================================
@@ -1151,7 +1133,7 @@
     renderLogs();
   }
 
-  // Render Log History Items with Drink Type Badges & Individual Delete Buttons
+  // Render Log History Items with Clean Water Formatting & Individual Delete Buttons
   function renderLogs() {
     elements.logList.innerHTML = '';
 
@@ -1164,15 +1146,12 @@
         const li = document.createElement('li');
         li.className = 'log-item';
 
-        const icon = log.drinkIcon || '💧';
-        const label = log.label || 'Water';
-
         li.innerHTML = `
           <div class="log-info">
-            <div class="log-icon-bubble">${icon}</div>
+            <div class="log-icon-bubble">💧</div>
             <div>
               <div class="log-amount">+${log.amount} ml</div>
-              <div class="log-time">${label} • ${log.time}</div>
+              <div class="log-time">${log.time}</div>
             </div>
           </div>
           <div class="log-item-actions">
@@ -1364,21 +1343,11 @@
   // Event Listeners Setup
   // ==========================================================================
   function setupEventListeners() {
-    // Drink Types Selection
-    elements.drinkTagButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const type = btn.dataset.type;
-        const icon = btn.dataset.icon;
-        selectDrinkType(type, icon);
-      });
-    });
-
-    // Preset Buttons
+    // Preset Water Buttons
     elements.presetButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const amount = parseInt(btn.dataset.amount, 10);
-        const desc = `${state.selectedDrink.type} (${btn.querySelector('.preset-desc')?.textContent || 'Preset'})`;
-        addWater(amount, desc, state.selectedDrink.icon);
+        addWater(amount);
       });
     });
 
@@ -1387,7 +1356,7 @@
       e.preventDefault();
       const amount = parseInt(elements.customAmountInput.value, 10);
       if (amount && amount > 0) {
-        addWater(amount, `${state.selectedDrink.type}`, state.selectedDrink.icon);
+        addWater(amount);
         elements.customAmountInput.value = '';
       }
     });
@@ -1397,7 +1366,7 @@
       chip.addEventListener('click', () => {
         const quickVal = parseInt(chip.dataset.quick, 10);
         elements.customAmountInput.value = quickVal;
-        addWater(quickVal, `${state.selectedDrink.type}`, state.selectedDrink.icon);
+        addWater(quickVal);
       });
     });
 

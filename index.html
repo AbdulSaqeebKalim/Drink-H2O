@@ -88,13 +88,9 @@
           </div>
         </form>
 
-        <!-- Circular Water Wave Tracker (Realistic Liquid Dual-Wave) -->
+        <!-- Circular Water Wave Tracker (2D Liquid Dual-Wave) -->
         <div class="tracker-wrapper">
           <div class="circular-meter" id="circularMeter">
-            <!-- Glassmorphism Highlight Curvature -->
-            <div class="glass-reflection" aria-hidden="true"></div>
-            <div class="glass-rim" aria-hidden="true"></div>
-
             <!-- Fluid Wave Level Container (Smooth 1s Height Transition) -->
             <div class="wave-container is-empty" id="waveContainer">
               <!-- Dual Animated Wave SVG Surface -->
@@ -103,7 +99,7 @@
                 <svg class="wave-svg wave-back" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="waveBackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8" />
+                      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.75" />
                       <stop offset="100%" stop-color="#0284c7" stop-opacity="0.6" />
                     </linearGradient>
                   </defs>
@@ -114,16 +110,16 @@
                 <svg class="wave-svg wave-front" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="waveFrontGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.95" />
-                      <stop offset="50%" stop-color="#0ea5e9" stop-opacity="0.9" />
-                      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.85" />
+                      <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.9" />
+                      <stop offset="50%" stop-color="#0ea5e9" stop-opacity="0.85" />
+                      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.8" />
                     </linearGradient>
                   </defs>
                   <path d="M 0,25 Q 150,0 300,25 T 600,25 Q 750,0 900,25 T 1200,25 L 1200,60 L 0,60 Z" fill="url(#waveFrontGrad)" />
                 </svg>
               </div>
 
-              <!-- Main Water Liquid Body (Rich Ocean Blue Gradient) -->
+              <!-- Main Water Liquid Body (Clean 2D Ocean Gradient) -->
               <div class="water-body">
                 <div class="bubbles-wrap" id="bubblesWrap" aria-hidden="true">
                   <span class="bubble b1"></span>
@@ -164,65 +160,40 @@
         </div>
       </section>
 
-      <!-- Water Logging Actions with Beverage Types, Presets & Custom Input -->
+      <!-- Water Logging Actions with Water Presets & Custom Input -->
       <section class="card action-card">
         <div class="action-card-header">
-          <h2 class="section-title">Log Intake</h2>
-          <span class="selected-drink-indicator" id="selectedDrinkIndicator">
-            Current: <strong id="activeDrinkName">Water 💧</strong>
-          </span>
+          <h2 class="section-title">Log Water</h2>
+          <span class="water-log-badge">Pure H₂O 💧</span>
         </div>
 
-        <!-- Fluid / Drink Type Selection Tags -->
-        <div class="drink-types-container">
-          <label class="drink-type-label">Select Beverage Type:</label>
-          <div class="drink-tags-grid" role="radiogroup" aria-label="Drink Type">
-            <button type="button" class="drink-tag-btn active ripple-btn" data-type="Water" data-icon="💧" role="radio" aria-checked="true">
-              <span class="drink-tag-icon">💧</span>
-              <span class="drink-tag-name">Water</span>
-            </button>
-            <button type="button" class="drink-tag-btn ripple-btn" data-type="Tea" data-icon="🍵" role="radio" aria-checked="false">
-              <span class="drink-tag-icon">🍵</span>
-              <span class="drink-tag-name">Tea</span>
-            </button>
-            <button type="button" class="drink-tag-btn ripple-btn" data-type="Coffee" data-icon="☕" role="radio" aria-checked="false">
-              <span class="drink-tag-icon">☕</span>
-              <span class="drink-tag-name">Coffee</span>
-            </button>
-            <button type="button" class="drink-tag-btn ripple-btn" data-type="Juice" data-icon="🧃" role="radio" aria-checked="false">
-              <span class="drink-tag-icon">🧃</span>
-              <span class="drink-tag-name">Juice</span>
-            </button>
-          </div>
-        </div>
-        
-        <!-- Preset Amount Buttons with Active Press Animation & Ripples -->
+        <!-- Preset Water Amount Buttons -->
         <div class="preset-grid">
-          <button class="btn btn-preset ripple-btn" data-amount="150" aria-label="Add 150 ml">
-            <span class="preset-icon">☕</span>
-            <span class="preset-amount">+150 ml</span>
-            <span class="preset-desc">Small Cup</span>
-          </button>
-          <button class="btn btn-preset ripple-btn active" data-amount="250" aria-label="Add 250 ml">
+          <button class="btn btn-preset ripple-btn" data-amount="150" aria-label="Add 150 ml water">
             <span class="preset-icon">🥛</span>
+            <span class="preset-amount">+150 ml</span>
+            <span class="preset-desc">Small Glass</span>
+          </button>
+          <button class="btn btn-preset ripple-btn active" data-amount="250" aria-label="Add 250 ml water">
+            <span class="preset-icon">💧</span>
             <span class="preset-amount">+250 ml</span>
             <span class="preset-desc">Standard Glass</span>
           </button>
-          <button class="btn btn-preset ripple-btn" data-amount="500" aria-label="Add 500 ml">
+          <button class="btn btn-preset ripple-btn" data-amount="500" aria-label="Add 500 ml water">
             <span class="preset-icon">🍶</span>
             <span class="preset-amount">+500 ml</span>
             <span class="preset-desc">Water Bottle</span>
           </button>
-          <button class="btn btn-preset ripple-btn" data-amount="750" aria-label="Add 750 ml">
+          <button class="btn btn-preset ripple-btn" data-amount="750" aria-label="Add 750 ml water">
             <span class="preset-icon">🫙</span>
             <span class="preset-amount">+750 ml</span>
-            <span class="preset-desc">Large Flask</span>
+            <span class="preset-desc">Large Bottle</span>
           </button>
         </div>
 
         <!-- Custom Intake Input & Custom Add Button -->
         <form id="customLogForm" class="custom-log-form">
-          <label for="customAmountInput" class="custom-input-label">Custom Amount (ml):</label>
+          <label for="customAmountInput" class="custom-input-label">Custom Water Amount (ml):</label>
           <div class="input-group">
             <input type="number" id="customAmountInput" placeholder="Enter ml (e.g. 350)" min="10" max="3000" step="10" required>
             <button type="submit" class="btn btn-primary ripple-btn" id="addCustomBtn">
@@ -230,7 +201,7 @@
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              Custom Add
+              Add Water
             </button>
           </div>
           <!-- Quick increment chips for convenience -->
@@ -336,7 +307,7 @@
         </ul>
         <div id="emptyLogState" class="empty-state">
           <span class="empty-state-icon">💧</span>
-          <p>No intake logged yet today. Select a drink type and tap a preset or custom amount above!</p>
+          <p>No water logged yet today. Tap a preset or enter a custom amount above to start hydrating!</p>
         </div>
       </section>
     </main>
