@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Drink H2O - Clean and smart daily hydration tracker with goal calculation and progress tracking.">
+  <meta name="description" content="Drink H2O - Smart daily hydration tracker with personalized profile calculations and progress tracking.">
   <meta name="theme-color" content="#0284c7">
   <title>Drink H2O - Daily Hydration Tracker</title>
   <link rel="stylesheet" href="style.css">
@@ -27,42 +27,56 @@
         </div>
       </div>
 
-      <button id="themeToggleBtn" class="icon-btn" aria-label="Toggle theme">
-        <svg id="themeIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-        </svg>
-      </button>
+      <div class="header-actions">
+        <!-- Profile / Calculator Button -->
+        <button id="profileModalBtn" class="icon-btn" aria-label="Open Personal Profile & Goal Calculator" title="Personal Profile & Goal Calculator">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="themeToggleBtn" class="icon-btn" aria-label="Toggle theme" title="Toggle theme">
+          <svg id="themeIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+      </div>
     </header>
 
-    <!-- Goal & Visual Progress Tracker -->
+    <!-- Main Content -->
     <main class="main-content">
+      <!-- Goal & Circular Visual Progress Card -->
       <section class="card progress-card">
         <div class="goal-header">
           <div>
             <span class="label">Daily Target</span>
             <div class="goal-value-wrapper">
               <span class="goal-value" id="goalDisplay">2500 ml</span>
-              <button id="editGoalBtn" class="text-link" aria-label="Edit goal">Edit</button>
+              <button id="editGoalBtn" class="text-link" aria-label="Edit or recalculate goal">Change</button>
             </div>
+            <p class="goal-subtitle" id="goalFormulaNote">Calculated based on your profile</p>
           </div>
           <div class="goal-summary-badge" id="completionBadge">0%</div>
         </div>
 
-        <!-- Inline Goal Edit Form (Hidden by default) -->
+        <!-- Inline Quick Target Override Form (Collapsible) -->
         <form id="goalEditForm" class="goal-edit-form hidden">
-          <label for="goalInput">Set Daily Water Goal (ml):</label>
+          <label for="goalInput">Custom Daily Water Goal (ml):</label>
           <div class="input-inline">
-            <input type="number" id="goalInput" min="500" max="6000" step="50" value="2500" required>
-            <button type="submit" class="btn btn-primary btn-sm">Save</button>
-            <button type="button" id="cancelGoalBtn" class="btn btn-outline btn-sm">Cancel</button>
+            <input type="number" id="goalInput" min="500" max="8000" step="50" value="2500" required>
+            <button type="submit" class="btn btn-primary btn-sm">Set Goal</button>
+            <button type="button" id="recalcFromProfileBtn" class="btn btn-outline btn-sm" title="Revert to profile recommendation">Auto-Calc</button>
+            <button type="button" id="cancelGoalBtn" class="btn btn-text btn-sm">✕</button>
           </div>
         </form>
 
@@ -81,7 +95,7 @@
           </div>
         </div>
 
-        <!-- Quick Stats Row -->
+        <!-- Stats Row -->
         <div class="stats-row">
           <div class="stat-item">
             <span class="stat-num" id="glassesCount">0</span>
@@ -100,28 +114,28 @@
         </div>
       </section>
 
-      <!-- Water Logging Controls -->
+      <!-- Water Logging Actions -->
       <section class="card action-card">
         <h2 class="section-title">Log Water Intake</h2>
         
         <!-- Preset Amount Buttons -->
         <div class="preset-grid">
-          <button class="btn btn-preset" data-amount="150">
+          <button class="btn btn-preset" data-amount="150" aria-label="Add 150 ml">
             <span class="preset-icon">☕</span>
             <span class="preset-amount">+150 ml</span>
             <span class="preset-desc">Small Cup</span>
           </button>
-          <button class="btn btn-preset active" data-amount="250">
+          <button class="btn btn-preset active" data-amount="250" aria-label="Add 250 ml">
             <span class="preset-icon">🥛</span>
             <span class="preset-amount">+250 ml</span>
             <span class="preset-desc">Standard Glass</span>
           </button>
-          <button class="btn btn-preset" data-amount="500">
+          <button class="btn btn-preset" data-amount="500" aria-label="Add 500 ml">
             <span class="preset-icon">🍶</span>
             <span class="preset-amount">+500 ml</span>
             <span class="preset-desc">Water Bottle</span>
           </button>
-          <button class="btn btn-preset" data-amount="750">
+          <button class="btn btn-preset" data-amount="750" aria-label="Add 750 ml">
             <span class="preset-icon">🫙</span>
             <span class="preset-amount">+750 ml</span>
             <span class="preset-desc">Large Flask</span>
@@ -138,14 +152,14 @@
 
         <!-- Secondary Actions -->
         <div class="secondary-actions">
-          <button id="undoBtn" class="btn btn-outline" title="Subtract last intake">
+          <button id="undoBtn" class="btn btn-outline" title="Subtract 250ml or undo last intake">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 7v6h6"></path>
               <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
             </svg>
             Subtract 250ml
           </button>
-          <button id="resetDayBtn" class="btn btn-danger-outline" title="Reset today's progress to zero">
+          <button id="resetDayBtn" class="btn btn-danger-outline" title="Reset today's progress">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="1 4 1 10 7 10"></polyline>
               <polyline points="23 20 23 14 17 14"></polyline>
@@ -163,7 +177,7 @@
           <span class="badge" id="totalLoggedBadge">0 ml Total</span>
         </div>
         <ul id="logList" class="log-list">
-          <!-- Populated dynamically by script.js -->
+          <!-- Dynamically populated -->
         </ul>
         <div id="emptyLogState" class="empty-state">
           <p>No intake logged yet today. Tap any preset above to begin!</p>
@@ -171,11 +185,136 @@
       </section>
     </main>
 
-    <!-- Toast Notification for In-App Feedback -->
+    <!-- Personal Profile & Goal Calculator Modal -->
+    <div id="profileModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <div class="icon-bubble">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div>
+              <h2 id="profileModalTitle" class="modal-title">Personal Profile & Goal</h2>
+              <p class="modal-subtitle">Auto-calculates your recommended daily hydration</p>
+            </div>
+          </div>
+          <button id="closeProfileModalBtn" class="close-btn" aria-label="Close profile modal">✕</button>
+        </div>
+
+        <form id="profileForm" class="profile-form">
+          <!-- Real-Time Calculation Preview Card -->
+          <div class="calc-preview-card">
+            <div class="calc-preview-info">
+              <span class="calc-preview-label">Recommended Daily Target</span>
+              <div class="calc-preview-target">
+                <span id="previewGoalMl">2500</span> <small>ml</small>
+                <span class="calc-preview-liters" id="previewGoalLiters">(2.5 L)</span>
+              </div>
+              <span class="calc-preview-glasses" id="previewGlasses">≈ 10 glasses (250ml each)</span>
+            </div>
+            <div class="calc-preview-water-icon">💧</div>
+          </div>
+
+          <!-- Age & Gender Fields -->
+          <div class="form-row two-cols">
+            <div class="form-group">
+              <label for="profAge">Age (years)</label>
+              <input type="number" id="profAge" min="10" max="110" value="26" required>
+            </div>
+
+            <div class="form-group">
+              <label for="profGender">Biological Sex</label>
+              <select id="profGender">
+                <option value="male">Male (+200ml baseline)</option>
+                <option value="female">Female</option>
+                <option value="other">Other / Standard</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Weight Field with Unit Toggle -->
+          <div class="form-group">
+            <div class="label-with-toggle">
+              <label for="profWeight">Body Weight</label>
+              <div class="unit-toggle" role="group" aria-label="Weight units">
+                <button type="button" class="unit-btn active" id="unitKgBtn">kg</button>
+                <button type="button" class="unit-btn" id="unitLbsBtn">lbs</button>
+              </div>
+            </div>
+            <input type="number" id="profWeight" step="0.5" min="20" max="300" value="70" required>
+          </div>
+
+          <!-- Height Field with Unit Toggle -->
+          <div class="form-group">
+            <div class="label-with-toggle">
+              <label>Height</label>
+              <div class="unit-toggle" role="group" aria-label="Height units">
+                <button type="button" class="unit-btn active" id="unitCmBtn">cm</button>
+                <button type="button" class="unit-btn" id="unitFtBtn">ft / in</button>
+              </div>
+            </div>
+            <!-- Metric Height (cm) -->
+            <div id="heightCmWrapper">
+              <input type="number" id="profHeightCm" step="1" min="80" max="250" value="175">
+            </div>
+            <!-- Imperial Height (ft / in) -->
+            <div id="heightFtWrapper" class="input-inline two-inputs hidden">
+              <input type="number" id="profHeightFt" min="3" max="8" value="5" placeholder="ft">
+              <input type="number" id="profHeightIn" min="0" max="11" value="9" placeholder="in">
+            </div>
+          </div>
+
+          <!-- Physical Activity Level -->
+          <div class="form-group">
+            <label for="profActivity">Physical Activity Level</label>
+            <select id="profActivity">
+              <option value="sedentary">Sedentary (Little/no exercise, desk job)</option>
+              <option value="light">Lightly Active (Light exercise 1-3 days/wk)</option>
+              <option value="moderate" selected>Moderately Active (Moderate exercise 3-5 days/wk)</option>
+              <option value="very">Very Active (Heavy exercise 6-7 days/wk / Athlete)</option>
+            </select>
+          </div>
+
+          <!-- Daily Steps Walked -->
+          <div class="form-group">
+            <label for="profSteps">Estimated Daily Steps</label>
+            <div class="steps-input-wrapper">
+              <input type="number" id="profSteps" min="1000" max="40000" step="500" value="7500">
+              <span class="input-suffix">steps/day</span>
+            </div>
+          </div>
+
+          <!-- Goal Customization / Override Option -->
+          <div class="form-group checkbox-group">
+            <label class="custom-checkbox-label">
+              <input type="checkbox" id="overrideGoalCheck">
+              <span>Manually override recommended goal with a custom value</span>
+            </label>
+          </div>
+
+          <div id="customGoalFieldWrapper" class="form-group hidden">
+            <label for="customGoalInput">Custom Target (ml)</label>
+            <input type="number" id="customGoalInput" min="500" max="8000" step="50" placeholder="e.g. 3000">
+          </div>
+
+          <!-- Modal Actions -->
+          <div class="modal-actions">
+            <button type="button" id="cancelProfileBtn" class="btn btn-outline">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save & Apply Goal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
     <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
+    <!-- Footer -->
     <footer class="app-footer">
-      <p>Drink H2O • Your daily wellness companion</p>
+      <p>Drink H2O • Personalized Daily Hydration</p>
     </footer>
   </div>
 
