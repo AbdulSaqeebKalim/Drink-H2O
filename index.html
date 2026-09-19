@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Drink H2O - Smart daily hydration tracker with personalized profile calculations and progress tracking.">
+  <meta name="description" content="Drink H2O - Smart daily hydration tracker with personalized profile calculations, streak tracking, and celebration milestones.">
   <meta name="theme-color" content="#0284c7">
   <title>Drink H2O - Daily Hydration Tracker</title>
   <link rel="stylesheet" href="style.css">
@@ -28,7 +28,13 @@
       </div>
 
       <div class="header-actions">
-        <!-- Profile / Calculator Button -->
+        <!-- Goal Streak Counter Badge -->
+        <div class="streak-badge" id="streakBadge" title="Consecutive days hydration goal completed">
+          <span class="streak-fire" aria-hidden="true">🔥</span>
+          <span class="streak-text" id="streakText">Streak: <strong id="streakCount">0</strong> Days</span>
+        </div>
+
+        <!-- Profile / Calculator Modal Trigger -->
         <button id="profileModalBtn" class="icon-btn" aria-label="Open Personal Profile & Goal Calculator" title="Personal Profile & Goal Calculator">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -184,6 +190,47 @@
         </div>
       </section>
     </main>
+
+    <!-- Congratulations Goal Completion Modal Popup -->
+    <div id="congratsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="congratsTitle">
+      <div class="modal-card congrats-card">
+        <!-- Confetti Burst Graphic -->
+        <div class="congrats-sparkles" aria-hidden="true">
+          <span class="sparkle s1">✨</span>
+          <span class="sparkle s2">💧</span>
+          <span class="sparkle s3">⭐</span>
+          <span class="sparkle s4">🎉</span>
+          <span class="sparkle s5">✨</span>
+        </div>
+
+        <div class="congrats-badge-wrap">
+          <div class="congrats-badge">
+            <span class="congrats-main-icon">💧</span>
+            <span class="congrats-fire-badge">🔥</span>
+          </div>
+        </div>
+
+        <h2 id="congratsTitle" class="congrats-title">Goal Completed!</h2>
+        
+        <p class="congrats-message">🎉 Congratulations! You met your hydration goal today!</p>
+
+        <div class="congrats-streak-box">
+          <span class="congrats-streak-icon">🔥</span>
+          <div class="congrats-streak-details">
+            <span class="congrats-streak-label">Hydration Streak</span>
+            <span class="congrats-streak-value" id="congratsStreakDisplay">1 Day</span>
+          </div>
+        </div>
+
+        <p class="congrats-subtext">
+          You reached <strong id="congratsIntakeText">2500 ml</strong>! Excellent consistency keeps your body and mind energized.
+        </p>
+
+        <div class="congrats-actions">
+          <button id="closeCongratsBtn" class="btn btn-primary congrats-btn">Great! 🎉</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Personal Profile & Goal Calculator Modal -->
     <div id="profileModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">

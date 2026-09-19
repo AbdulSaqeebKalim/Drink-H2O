@@ -1,6 +1,11 @@
 /**
- * Drink H2O - Daily Hydration Tracker with Dynamic Profile Calculator
- * Handles state, profile calculations, unit conversions, sound synthesis, and UI reactivity.
+ * Drink H2O - Daily Hydration Tracker
+ * Features:
+ * - Dynamic Personal Profile & Hydration Goal Calculator
+ * - Interactive Celebratory Congratulations Popup upon goal achievement
+ * - Consecutive Goal Streak Counter with Fire Symbol (🔥) and persistent tracking
+ * - Web Audio API sound synthesis (water drop and celebration chime)
+ * - LocalStorage persistence with automatic calendar date rollover checks
  */
 
 (() => {
@@ -13,20 +18,22 @@
     LOGS: 'drink_h2o_logs',
     LAST_DATE: 'drink_h2o_last_date',
     THEME: 'drink_h2o_theme',
-    PROFILE: 'drink_h2o_user_profile'
+    PROFILE: 'drink_h2o_user_profile',
+    STREAK: 'drink_h2o_streak',
+    LAST_COMPLETED_DATE: 'drink_h2o_last_completed_date'
   };
 
   // Default Profile Configuration
   const defaultProfile = {
     age: 26,
-    gender: 'male', // 'male', 'female', 'other'
+    gender: 'male',
     weight: 70,
-    weightUnit: 'kg', // 'kg' or 'lbs'
+    weightUnit: 'kg',
     heightCm: 175,
     heightFt: 5,
     heightIn: 9,
-    heightUnit: 'cm', // 'cm' or 'ft'
-    activity: 'moderate', // 'sedentary', 'light', 'moderate', 'very'
+    heightUnit: 'cm',
+    activity: 'moderate',
     steps: 7500,
     isOverridden: false,
     customGoal: 2500,
@@ -39,7 +46,10 @@
     currentIntake: 0,
     logs: [],
     theme: 'light',
-    profile: { ...defaultProfile }
+    profile: { ...defaultProfile },
+    streak: 0,
+    lastCompletedDate: null,
+    celebratedToday: false
   };
 
   // DOM Elements
@@ -72,6 +82,16 @@
     toast: document.getElementById('toast'),
     presetButtons: document.querySelectorAll('.btn-preset'),
 
+    // Streak Elements
+    streakBadge: document.getElementById('streakBadge'),
+    streakCount: document.getElementById('streakCount'),
+
+    // Congratulations Modal Elements
+    congratsModal: document.getElementById('congratsModal'),
+    closeCongratsBtn: document.getElementById('closeCongratsBtn'),
+    congratsStreakDisplay: document.getElementById('congratsStreakDisplay'),
+    congratsIntakeText: document.getElementById('congratsIntakeText'),
+
     // Profile Modal Elements
     profileModalBtn: document.getElementById('profileModalBtn'),
     profileModal: document.getElementById('profileModal'),
@@ -102,25 +122,29 @@
     customGoalInput: document.getElementById('customGoalInput')
   };
 
-  // Sound Synthesizer via Web Audio API (Zero external assets required)
+  // Web Audio Context & Sound Synthesis
   let audioCtx = null;
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextClass();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  // Water Droplet Sound
   function playWaterDropSound() {
     try {
-      if (!audioCtx) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContextClass();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const ctx = getAudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
       osc.type = 'sine';
-      const now = audioCtx.currentTime;
+      const now = ctx.currentTime;
 
-      // Realistic droplet pitch sweep: rise rapidly then decay
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
       osc.frequency.exponentialRampToValueAtTime(950, now + 0.18);
@@ -129,12 +153,40 @@
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(ctx.destination);
 
       osc.start(now);
       osc.stop(now + 0.22);
     } catch (e) {
-      // Audio context might be restricted before first user interaction
+      // Ignore audio restriction errors before user gesture
+    }
+  }
+
+  // Celebratory Chime Sound (Triumphant Arpeggio: C5 -> E5 -> G5 -> C6)
+  function playCelebrationSound() {
+    try {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+
+      notes.forEach((freq, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + index * 0.1);
+
+        gain.gain.setValueAtTime(0.25, now + index * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.1 + 0.4);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + index * 0.1);
+        osc.stop(now + index * 0.1 + 0.4);
+      });
+    } catch (e) {
+      // Ignore audio errors
     }
   }
 
@@ -150,42 +202,41 @@
     }, 2400);
   }
 
-  // Today string: YYYY-MM-DD
-  function getTodayDateString() {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+  // Date Helpers (YYYY-MM-DD)
+  function getFormattedDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
+  function getTodayDateString() {
+    return getFormattedDate(new Date());
+  }
+
+  function getYesterdayDateString() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return getFormattedDate(d);
+  }
+
   // ==========================================================================
-  // Dynamic Hydration Goal Calculation Logic
-  // Formula:
-  // - Base Intake = Weight in kg * 35 ml
-  // - Biological Sex adjustment (+200ml for male metabolic baseline)
-  // - Age adjustment (<30 +100ml, >55 -100ml)
-  // - Activity factor (Sedentary: 0ml, Light: +300ml, Moderate: +600ml, Very: +950ml)
-  // - Step bonus: for steps over 5,000, +25ml per 500 steps
+  // Goal Calculation Algorithm
   // ==========================================================================
   function calculateHydrationGoal(profile) {
-    // 1. Convert weight to kg if entered in lbs
     let weightInKg = parseFloat(profile.weight) || 70;
     if (profile.weightUnit === 'lbs') {
       weightInKg = weightInKg * 0.453592;
     }
 
-    // 2. Base weight intake (35 ml per kg)
     let goal = weightInKg * 35;
 
-    // 3. Gender baseline factor
     if (profile.gender === 'male') {
       goal += 200;
     } else if (profile.gender === 'other') {
       goal += 100;
     }
 
-    // 4. Age factor
     const age = parseInt(profile.age, 10) || 26;
     if (age < 30) {
       goal += 100;
@@ -193,7 +244,6 @@
       goal -= 100;
     }
 
-    // 5. Activity level bonus
     switch (profile.activity) {
       case 'sedentary':
         goal += 0;
@@ -211,16 +261,43 @@
         goal += 500;
     }
 
-    // 6. Step count bonus (above sedentary baseline of 5,000 steps)
     const steps = parseInt(profile.steps, 10) || 0;
     if (steps > 5000) {
       const extraSteps = steps - 5000;
       goal += Math.min(800, (extraSteps / 500) * 25);
     }
 
-    // 7. Clamp to healthy recommended bounds and round to nearest 50ml
     goal = Math.max(1200, Math.min(5500, goal));
     return Math.round(goal / 50) * 50;
+  }
+
+  // ==========================================================================
+  // Streak Verification & Computation
+  // ==========================================================================
+  function evaluateStreakStateOnLoad() {
+    const today = getTodayDateString();
+    const yesterday = getYesterdayDateString();
+    const savedStreak = parseInt(localStorage.getItem(STORAGE_KEYS.STREAK), 10) || 0;
+    const lastCompleted = localStorage.getItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
+
+    state.streak = savedStreak;
+    state.lastCompletedDate = lastCompleted;
+
+    if (!lastCompleted) {
+      state.streak = 0;
+      state.celebratedToday = false;
+    } else if (lastCompleted === today) {
+      // Completed earlier today
+      state.celebratedToday = true;
+    } else if (lastCompleted === yesterday) {
+      // Completed yesterday: streak remains active, awaiting today's completion
+      state.celebratedToday = false;
+    } else {
+      // Missed at least one calendar day: streak resets
+      state.streak = 0;
+      state.celebratedToday = false;
+      localStorage.setItem(STORAGE_KEYS.STREAK, '0');
+    }
   }
 
   // Load state from localStorage
@@ -228,7 +305,7 @@
     const today = getTodayDateString();
     const storedDate = localStorage.getItem(STORAGE_KEYS.LAST_DATE);
 
-    // Load Profile
+    // Profile
     const savedProfile = localStorage.getItem(STORAGE_KEYS.PROFILE);
     if (savedProfile) {
       try {
@@ -240,10 +317,9 @@
       state.profile = { ...defaultProfile };
     }
 
-    // Recalculate recommendation
     state.profile.calculatedGoal = calculateHydrationGoal(state.profile);
 
-    // Stored goal resolution
+    // Daily Goal
     const savedGoal = localStorage.getItem(STORAGE_KEYS.GOAL);
     if (savedGoal && !isNaN(parseInt(savedGoal, 10))) {
       state.dailyGoal = parseInt(savedGoal, 10);
@@ -253,13 +329,16 @@
         : state.profile.calculatedGoal;
     }
 
-    // Stored theme
+    // Theme
     const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
     if (savedTheme) {
       state.theme = savedTheme;
     } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       state.theme = 'dark';
     }
+
+    // Streak Check
+    evaluateStreakStateOnLoad();
 
     // Date Rollover Check
     if (storedDate !== today) {
@@ -288,6 +367,50 @@
     localStorage.setItem(STORAGE_KEYS.LAST_DATE, getTodayDateString());
     localStorage.setItem(STORAGE_KEYS.THEME, state.theme);
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(state.profile));
+    localStorage.setItem(STORAGE_KEYS.STREAK, state.streak.toString());
+    if (state.lastCompletedDate) {
+      localStorage.setItem(STORAGE_KEYS.LAST_COMPLETED_DATE, state.lastCompletedDate);
+    }
+  }
+
+  // Check and trigger goal completion milestone
+  function checkGoalMilestone() {
+    const today = getTodayDateString();
+    const yesterday = getYesterdayDateString();
+
+    if (state.currentIntake >= state.dailyGoal) {
+      // Check if this is the first completion for today
+      if (state.lastCompletedDate !== today) {
+        if (state.lastCompletedDate === yesterday) {
+          state.streak += 1;
+        } else {
+          state.streak = 1;
+        }
+        state.lastCompletedDate = today;
+        saveState();
+      }
+
+      // Show congratulations modal if not yet triggered in this session/day
+      if (!state.celebratedToday) {
+        state.celebratedToday = true;
+        showCongratsModal();
+      }
+    }
+  }
+
+  // Show Congratulations Modal Popup
+  function showCongratsModal() {
+    elements.congratsStreakDisplay.textContent = `${state.streak} ${state.streak === 1 ? 'Day' : 'Days'}`;
+    elements.congratsIntakeText.textContent = `${state.currentIntake} ml`;
+
+    playCelebrationSound();
+    elements.congratsModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCongratsModal() {
+    elements.congratsModal.classList.add('hidden');
+    document.body.style.overflow = '';
   }
 
   // Add water intake
@@ -309,6 +432,9 @@
     updateUI();
     playWaterDropSound();
     showToast(`+${amount} ml logged! Keep going 💧`);
+
+    // Check if goal met
+    checkGoalMilestone();
   }
 
   // Subtract water (undo last intake)
@@ -353,6 +479,7 @@
     if (confirmReset) {
       state.currentIntake = 0;
       state.logs = [];
+      state.celebratedToday = false;
       saveState();
       updateUI();
       showToast("Today's intake has been reset.");
@@ -376,12 +503,21 @@
     }
     elements.completionBadge.textContent = `${percent}%`;
 
+    // Streak UI
+    elements.streakCount.textContent = state.streak;
+    if (state.streak > 0) {
+      elements.streakBadge.classList.add('active-streak');
+      elements.streakBadge.setAttribute('title', `${state.streak} consecutive days hydration goal reached!`);
+    } else {
+      elements.streakBadge.classList.remove('active-streak');
+      elements.streakBadge.setAttribute('title', 'Complete today\'s goal to begin your streak!');
+    }
+
     // Meter & Waves
     elements.percentText.textContent = `${percent}%`;
     elements.currentIntakeText.textContent = `${intake} ml`;
     elements.remainingText.textContent = remaining > 0 ? `${remaining} ml left` : 'Goal reached! 🎉';
 
-    // Wave height clamped between 0 and 100%
     const waveHeight = Math.min(100, Math.max(0, percent));
     elements.waveContainer.style.height = `${waveHeight}%`;
 
@@ -401,7 +537,6 @@
     }
     elements.statusMessage.textContent = statusText;
 
-    // Badges & log list
     elements.totalLoggedBadge.textContent = `${intake} ml Total`;
     renderLogs();
   }
@@ -448,7 +583,6 @@
   // Profile Modal & Live Calculation Handling
   // ==========================================================================
   function openProfileModal() {
-    // Populate form with current state
     const prof = state.profile;
     elements.profAge.value = prof.age || 26;
     elements.profGender.value = prof.gender || 'male';
@@ -456,24 +590,19 @@
     elements.profActivity.value = prof.activity || 'moderate';
     elements.profSteps.value = prof.steps || 7500;
 
-    // Weight Unit
     setWeightUnit(prof.weightUnit || 'kg');
 
-    // Height Unit
     elements.profHeightCm.value = prof.heightCm || 175;
     elements.profHeightFt.value = prof.heightFt || 5;
     elements.profHeightIn.value = prof.heightIn || 9;
     setHeightUnit(prof.heightUnit || 'cm');
 
-    // Override State
     elements.overrideGoalCheck.checked = Boolean(prof.isOverridden);
     elements.customGoalInput.value = prof.customGoal || state.dailyGoal;
     toggleCustomGoalVisibility(prof.isOverridden);
 
-    // Update real-time preview
     updateProfilePreview();
 
-    // Show modal
     elements.profileModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
   }
@@ -536,7 +665,6 @@
     };
   }
 
-  // Update real-time modal preview values
   function updateProfilePreview() {
     const tempProfile = getCurrentFormProfile();
     const calculated = calculateHydrationGoal(tempProfile);
@@ -552,7 +680,6 @@
     elements.previewGlasses.textContent = `≈ ${glasses} glasses (250ml each)`;
   }
 
-  // Apply and save profile changes
   function handleProfileSubmit(e) {
     e.preventDefault();
     const updated = getCurrentFormProfile();
@@ -571,6 +698,8 @@
     updateUI();
     closeProfileModal();
     showToast(`Hydration goal updated to ${state.dailyGoal} ml! 💧`);
+
+    checkGoalMilestone();
   }
 
   // Theme Handling
@@ -656,6 +785,7 @@
         updateUI();
         elements.goalEditForm.classList.add('hidden');
         showToast(`Target updated to ${newGoal} ml!`);
+        checkGoalMilestone();
       }
     });
 
@@ -668,6 +798,15 @@
       updateUI();
       elements.goalEditForm.classList.add('hidden');
       showToast(`Target reset to profile recommendation (${calculated} ml)! 💧`);
+      checkGoalMilestone();
+    });
+
+    // Congratulations Modal
+    elements.closeCongratsBtn.addEventListener('click', closeCongratsModal);
+    elements.congratsModal.addEventListener('click', (e) => {
+      if (e.target === elements.congratsModal) {
+        closeCongratsModal();
+      }
     });
 
     // Profile Modal Open & Close
@@ -675,25 +814,26 @@
     elements.closeProfileModalBtn.addEventListener('click', closeProfileModal);
     elements.cancelProfileBtn.addEventListener('click', closeProfileModal);
 
-    // Close on backdrop click
     elements.profileModal.addEventListener('click', (e) => {
       if (e.target === elements.profileModal) {
         closeProfileModal();
       }
     });
 
-    // Close on Escape key
+    // Global Escape Key Listener for Modals
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !elements.profileModal.classList.contains('hidden')) {
-        closeProfileModal();
+      if (e.key === 'Escape') {
+        if (!elements.congratsModal.classList.contains('hidden')) {
+          closeCongratsModal();
+        } else if (!elements.profileModal.classList.contains('hidden')) {
+          closeProfileModal();
+        }
       }
     });
 
-    // Weight unit switch
+    // Weight & Height unit toggles
     elements.unitKgBtn.addEventListener('click', () => setWeightUnit('kg'));
     elements.unitLbsBtn.addEventListener('click', () => setWeightUnit('lbs'));
-
-    // Height unit switch
     elements.unitCmBtn.addEventListener('click', () => setHeightUnit('cm'));
     elements.unitFtBtn.addEventListener('click', () => setHeightUnit('ft'));
 
@@ -736,7 +876,7 @@
     elements.currentDateDisplay.textContent = new Date().toLocaleDateString(undefined, options);
   }
 
-  // Initialize
+  // Initialize App
   function init() {
     initHeaderDate();
     loadState();

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Drink H2O - Style Sheet with Personal Profile & Dynamic Goal Calculator
+   Drink H2O - Style Sheet with Personal Profile, Streak & Celebrations
    ========================================================================== */
 
 :root {
@@ -10,6 +10,11 @@
   --accent-cyan: #06b6d4;
   --accent-wave: rgba(2, 132, 199, 0.4);
   --accent-wave-front: rgba(6, 182, 212, 0.65);
+
+  --fire-primary: #f97316;
+  --fire-gradient: linear-gradient(135deg, #f97316, #ef4444);
+  --fire-bg: #fff7ed;
+  --fire-border: #fed7aa;
   
   --bg-app: #f0f9ff;
   --surface: #ffffff;
@@ -32,6 +37,7 @@
   --shadow-md: 0 4px 12px rgba(2, 132, 199, 0.08);
   --shadow-lg: 0 10px 25px -5px rgba(2, 132, 199, 0.12);
   --shadow-modal: 0 20px 40px rgba(15, 23, 42, 0.25);
+  --shadow-fire: 0 4px 12px rgba(249, 115, 22, 0.25);
   
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -44,6 +50,11 @@
   --primary-dark: #bae6fd;
   --accent-wave: rgba(14, 165, 233, 0.35);
   --accent-wave-front: rgba(56, 189, 248, 0.55);
+
+  --fire-primary: #fb923c;
+  --fire-gradient: linear-gradient(135deg, #fb923c, #f87171);
+  --fire-bg: #2b1704;
+  --fire-border: #7c2d12;
   
   --bg-app: #090e17;
   --surface: #131c2d;
@@ -55,6 +66,7 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
   --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.6);
+  --shadow-fire: 0 4px 14px rgba(249, 115, 22, 0.35);
 }
 
 /* Global Reset & Base */
@@ -97,12 +109,12 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .brand-icon {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
   color: #ffffff;
@@ -110,19 +122,21 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+  flex-shrink: 0;
 }
 
 .brand-title {
-  font-size: 1.35rem;
+  font-size: 1.28rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1.2;
 }
 
 .brand-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
   font-weight: 500;
 }
@@ -133,12 +147,56 @@ body {
   gap: 8px;
 }
 
+/* Goal Streak Counter Badge */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--fire-bg);
+  border: 1.5px solid var(--fire-border);
+  padding: 6px 11px;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  cursor: default;
+  user-select: none;
+}
+
+.streak-badge.active-streak {
+  box-shadow: var(--shadow-fire);
+  border-color: var(--fire-primary);
+  animation: pulseFire 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseFire {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.streak-fire {
+  font-size: 1.05rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(249, 115, 22, 0.4));
+}
+
+.streak-text {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--fire-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.streak-text strong {
+  font-weight: 800;
+}
+
 .icon-btn {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-main);
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
@@ -146,6 +204,7 @@ body {
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
+  flex-shrink: 0;
 }
 
 .icon-btn:hover {
@@ -653,7 +712,7 @@ body {
 }
 
 /* ==========================================================================
-   Personal Profile & Calculator Modal
+   Modals Common Styles
    ========================================================================== */
 .modal-backdrop {
   position: fixed;
@@ -662,7 +721,7 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -695,7 +754,7 @@ body {
 
 @keyframes modalScaleIn {
   from {
-    transform: scale(0.95);
+    transform: scale(0.92);
     opacity: 0;
   }
   to {
@@ -762,7 +821,164 @@ body {
   color: var(--text-main);
 }
 
-/* Real-Time Preview Card inside Modal */
+/* ==========================================================================
+   Congratulations Modal Popup
+   ========================================================================== */
+.congrats-card {
+  max-width: 400px;
+  text-align: center;
+  padding: 30px 24px 26px 24px;
+  overflow: hidden;
+  position: relative;
+}
+
+.congrats-sparkles {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  pointer-events: none;
+  font-size: 1.2rem;
+}
+
+.sparkle {
+  animation: floatSparkle 2s ease-in-out infinite alternate;
+}
+
+.sparkle.s1 { animation-delay: 0s; }
+.sparkle.s2 { animation-delay: 0.3s; }
+.sparkle.s3 { animation-delay: 0.6s; }
+.sparkle.s4 { animation-delay: 0.9s; }
+.sparkle.s5 { animation-delay: 1.2s; }
+
+@keyframes floatSparkle {
+  0% { transform: translateY(0) scale(0.9); opacity: 0.6; }
+  100% { transform: translateY(-8px) scale(1.15); opacity: 1; }
+}
+
+.congrats-badge-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.congrats-badge {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-light), #ecfeff);
+  border: 3px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
+  animation: bounceBadge 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+[data-theme="dark"] .congrats-badge {
+  background: linear-gradient(135deg, #082f49, #164e63);
+}
+
+@keyframes bounceBadge {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.congrats-main-icon {
+  font-size: 2.5rem;
+}
+
+.congrats-fire-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  font-size: 1.5rem;
+  background: var(--surface);
+  border-radius: 50%;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.congrats-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.congrats-message {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.congrats-streak-box {
+  background: var(--fire-bg);
+  border: 1.5px solid var(--fire-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.congrats-streak-icon {
+  font-size: 1.8rem;
+  animation: pulseFire 1.5s infinite ease-in-out;
+}
+
+.congrats-streak-details {
+  text-align: left;
+}
+
+.congrats-streak-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--fire-primary);
+}
+
+.congrats-streak-value {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.congrats-subtext {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 22px;
+}
+
+.congrats-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.congrats-btn {
+  width: 100%;
+  font-size: 1rem;
+  padding: 13px 20px;
+}
+
+/* ==========================================================================
+   Personal Profile & Calculator Inside Modal
+   ========================================================================== */
 .calc-preview-card {
   background: linear-gradient(135deg, var(--primary-light), var(--surface-secondary));
   border: 1.5px solid var(--primary);
@@ -985,6 +1201,15 @@ body {
 
 /* Mobile Screen Tuning */
 @media (max-width: 420px) {
+  .brand-title {
+    font-size: 1.15rem;
+  }
+  .streak-badge {
+    padding: 5px 8px;
+  }
+  .streak-text {
+    font-size: 0.72rem;
+  }
   .circular-meter {
     width: 200px;
     height: 200px;
