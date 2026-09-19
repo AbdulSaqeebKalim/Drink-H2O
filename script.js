@@ -1,11 +1,11 @@
 /**
  * Drink H2O - Daily Hydration Tracker
- * Features:
- * - Dynamic Personal Profile & Hydration Goal Calculator
- * - Interactive Celebratory Congratulations Popup upon goal achievement
- * - Consecutive Goal Streak Counter with Fire Symbol (🔥) and persistent tracking
- * - Web Audio API sound synthesis (water drop and celebration chime)
- * - LocalStorage persistence with automatic calendar date rollover checks
+ * Advanced Features:
+ * 1. Automatic Daily Intake Reset (New Day Logic with previous day goal evaluation)
+ * 2. Manual Streak Reset Feature with confirmation safeguards
+ * 3. Live Interactive Calendar with historical goal completion markers (🔥) and month navigation
+ * 4. Personal Profile & Hydration Goal Calculator
+ * 5. Audio synthesis and celebratory milestones
  */
 
 (() => {
@@ -20,7 +20,8 @@
     THEME: 'drink_h2o_theme',
     PROFILE: 'drink_h2o_user_profile',
     STREAK: 'drink_h2o_streak',
-    LAST_COMPLETED_DATE: 'drink_h2o_last_completed_date'
+    LAST_COMPLETED_DATE: 'drink_h2o_last_completed_date',
+    HISTORY: 'drink_h2o_history' // Map of 'YYYY-MM-DD' => { intake: number, goal: number, completed: boolean }
   };
 
   // Default Profile Configuration
@@ -49,7 +50,10 @@
     profile: { ...defaultProfile },
     streak: 0,
     lastCompletedDate: null,
-    celebratedToday: false
+    celebratedToday: false,
+    history: {},
+    calendarViewDate: new Date(), // Year & Month currently displayed in calendar
+    selectedCalendarDate: null
   };
 
   // DOM Elements
@@ -82,9 +86,16 @@
     toast: document.getElementById('toast'),
     presetButtons: document.querySelectorAll('.btn-preset'),
 
-    // Streak Elements
+    // Streak & Quick Reset Elements
     streakBadge: document.getElementById('streakBadge'),
     streakCount: document.getElementById('streakCount'),
+    quickStreakResetBtn: document.getElementById('quickStreakResetBtn'),
+
+    // Confirmation Modal for Streak Reset
+    resetStreakModal: document.getElementById('resetStreakModal'),
+    modalCurrentStreakCount: document.getElementById('modalCurrentStreakCount'),
+    cancelResetStreakBtn: document.getElementById('cancelResetStreakBtn'),
+    confirmResetStreakBtn: document.getElementById('confirmResetStreakBtn'),
 
     // Congratulations Modal Elements
     congratsModal: document.getElementById('congratsModal'),
@@ -98,6 +109,8 @@
     closeProfileModalBtn: document.getElementById('closeProfileModalBtn'),
     cancelProfileBtn: document.getElementById('cancelProfileBtn'),
     profileForm: document.getElementById('profileForm'),
+    profileModalStreakCount: document.getElementById('profileModalStreakCount'),
+    modalResetStreakBtn: document.getElementById('modalResetStreakBtn'),
 
     // Profile Inputs & Previews
     previewGoalMl: document.getElementById('previewGoalMl'),
@@ -119,7 +132,17 @@
     profSteps: document.getElementById('profSteps'),
     overrideGoalCheck: document.getElementById('overrideGoalCheck'),
     customGoalFieldWrapper: document.getElementById('customGoalFieldWrapper'),
-    customGoalInput: document.getElementById('customGoalInput')
+    customGoalInput: document.getElementById('customGoalInput'),
+
+    // Calendar Elements
+    calPrevMonthBtn: document.getElementById('calPrevMonthBtn'),
+    calNextMonthBtn: document.getElementById('calNextMonthBtn'),
+    calTodayBtn: document.getElementById('calTodayBtn'),
+    calMonthYearLabel: document.getElementById('calMonthYearLabel'),
+    calendarDaysGrid: document.getElementById('calendarDaysGrid'),
+    calDetailDate: document.getElementById('calDetailDate'),
+    calDetailStats: document.getElementById('calDetailStats'),
+    calDetailBadge: document.getElementById('calDetailBadge')
   };
 
   // Web Audio Context & Sound Synthesis
@@ -158,11 +181,11 @@
       osc.start(now);
       osc.stop(now + 0.22);
     } catch (e) {
-      // Ignore audio restriction errors before user gesture
+      // Audio autoplay policy catch
     }
   }
 
-  // Celebratory Chime Sound (Triumphant Arpeggio: C5 -> E5 -> G5 -> C6)
+  // Celebratory Chime Sound
   function playCelebrationSound() {
     try {
       const ctx = getAudioContext();
@@ -186,7 +209,7 @@
         osc.stop(now + index * 0.1 + 0.4);
       });
     } catch (e) {
-      // Ignore audio errors
+      // Audio catch
     }
   }
 
@@ -202,7 +225,7 @@
     }, 2400);
   }
 
-  // Date Helpers (YYYY-MM-DD)
+  // Date Formatting Helpers (YYYY-MM-DD)
   function getFormattedDate(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -220,9 +243,7 @@
     return getFormattedDate(d);
   }
 
-  // ==========================================================================
-  // Goal Calculation Algorithm
-  // ==========================================================================
+  // Calculate Hydration Goal based on Profile
   function calculateHydrationGoal(profile) {
     let weightInKg = parseFloat(profile.weight) || 70;
     if (profile.weightUnit === 'lbs') {
@@ -272,32 +293,78 @@
   }
 
   // ==========================================================================
-  // Streak Verification & Computation
+  // Feature 1: Automatic Daily Intake Reset (New Day Logic)
   // ==========================================================================
-  function evaluateStreakStateOnLoad() {
+  /**
+   * Checks the stored date against today's date whenever the app is opened or active.
+   * If a new calendar day has started:
+   *  - Reset current intake to 0 ml.
+   *  - Keep the user's daily goal target intact.
+   *  - Evaluate previous day: If the goal was NOT reached yesterday, break/reset streak counter to 0.
+   */
+  function checkAndHandleDateRollover() {
     const today = getTodayDateString();
+    const storedDate = localStorage.getItem(STORAGE_KEYS.LAST_DATE);
     const yesterday = getYesterdayDateString();
-    const savedStreak = parseInt(localStorage.getItem(STORAGE_KEYS.STREAK), 10) || 0;
-    const lastCompleted = localStorage.getItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
 
-    state.streak = savedStreak;
-    state.lastCompletedDate = lastCompleted;
-
-    if (!lastCompleted) {
-      state.streak = 0;
-      state.celebratedToday = false;
-    } else if (lastCompleted === today) {
-      // Completed earlier today
-      state.celebratedToday = true;
-    } else if (lastCompleted === yesterday) {
-      // Completed yesterday: streak remains active, awaiting today's completion
-      state.celebratedToday = false;
-    } else {
-      // Missed at least one calendar day: streak resets
-      state.streak = 0;
-      state.celebratedToday = false;
-      localStorage.setItem(STORAGE_KEYS.STREAK, '0');
+    if (!storedDate) {
+      // First run: save today as last date
+      localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
+      return;
     }
+
+    if (storedDate !== today) {
+      // New Calendar Day has started!
+
+      // 1. Archive the previously stored day's progress into historical record if needed
+      if (storedDate && !state.history[storedDate] && state.currentIntake > 0) {
+        state.history[storedDate] = {
+          intake: state.currentIntake,
+          goal: state.dailyGoal,
+          completed: state.currentIntake >= state.dailyGoal
+        };
+      }
+
+      // 2. Evaluate previous day goal achievement
+      // Check if the goal was reached on the immediately preceding day (yesterday)
+      const lastCompleted = localStorage.getItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
+      const yesterdayRecord = state.history[yesterday];
+      const reachedYesterday = (lastCompleted === yesterday) || (yesterdayRecord && yesterdayRecord.completed);
+
+      if (!reachedYesterday) {
+        // Goal was NOT reached yesterday -> break/reset streak counter to 0
+        state.streak = 0;
+        localStorage.setItem(STORAGE_KEYS.STREAK, '0');
+      }
+
+      // 3. Reset current water intake to 0 ml and reset today's logs
+      state.currentIntake = 0;
+      state.logs = [];
+      state.celebratedToday = false;
+
+      // 4. Update the stored date to today
+      localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
+      localStorage.setItem(STORAGE_KEYS.INTAKE, '0');
+      localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([]));
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history));
+
+      // 5. Keep user's daily goal intact (state.dailyGoal remains unchanged)
+      saveState();
+      updateUI();
+      renderCalendar();
+      showToast("A new day has started! Intake reset to 0 ml 💧");
+    }
+  }
+
+  // Sync today's current intake into history for real-time calendar visualization
+  function syncTodayHistory() {
+    const today = getTodayDateString();
+    state.history[today] = {
+      intake: state.currentIntake,
+      goal: state.dailyGoal,
+      completed: state.currentIntake >= state.dailyGoal
+    };
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history));
   }
 
   // Load state from localStorage
@@ -316,7 +383,6 @@
     } else {
       state.profile = { ...defaultProfile };
     }
-
     state.profile.calculatedGoal = calculateHydrationGoal(state.profile);
 
     // Daily Goal
@@ -337,16 +403,29 @@
       state.theme = 'dark';
     }
 
-    // Streak Check
-    evaluateStreakStateOnLoad();
-
-    // Date Rollover Check
-    if (storedDate !== today) {
-      state.currentIntake = 0;
-      state.logs = [];
-      localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
-      saveState();
+    // Historical Records
+    const savedHistory = localStorage.getItem(STORAGE_KEYS.HISTORY);
+    if (savedHistory) {
+      try {
+        state.history = JSON.parse(savedHistory) || {};
+      } catch (e) {
+        state.history = {};
+      }
     } else {
+      state.history = {};
+    }
+
+    // Streak & Last Completed Date
+    const savedStreak = parseInt(localStorage.getItem(STORAGE_KEYS.STREAK), 10) || 0;
+    const lastCompleted = localStorage.getItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
+    state.streak = savedStreak;
+    state.lastCompletedDate = lastCompleted;
+
+    // Check if new day rollover occurs
+    if (storedDate && storedDate !== today) {
+      checkAndHandleDateRollover();
+    } else {
+      // Current day continued
       const savedIntake = localStorage.getItem(STORAGE_KEYS.INTAKE);
       state.currentIntake = savedIntake ? parseInt(savedIntake, 10) || 0 : 0;
 
@@ -356,10 +435,17 @@
       } catch (e) {
         state.logs = [];
       }
+
+      if (lastCompleted === today) {
+        state.celebratedToday = true;
+      }
     }
+
+    localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
+    syncTodayHistory();
   }
 
-  // Save state to localStorage
+  // Save current state to localStorage
   function saveState() {
     localStorage.setItem(STORAGE_KEYS.GOAL, state.dailyGoal.toString());
     localStorage.setItem(STORAGE_KEYS.INTAKE, state.currentIntake.toString());
@@ -368,8 +454,11 @@
     localStorage.setItem(STORAGE_KEYS.THEME, state.theme);
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(state.profile));
     localStorage.setItem(STORAGE_KEYS.STREAK, state.streak.toString());
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history));
     if (state.lastCompletedDate) {
       localStorage.setItem(STORAGE_KEYS.LAST_COMPLETED_DATE, state.lastCompletedDate);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
     }
   }
 
@@ -377,6 +466,9 @@
   function checkGoalMilestone() {
     const today = getTodayDateString();
     const yesterday = getYesterdayDateString();
+
+    syncTodayHistory();
+    renderCalendar();
 
     if (state.currentIntake >= state.dailyGoal) {
       // Check if this is the first completion for today
@@ -390,7 +482,7 @@
         saveState();
       }
 
-      // Show congratulations modal if not yet triggered in this session/day
+      // Show congratulations modal if not yet triggered today
       if (!state.celebratedToday) {
         state.celebratedToday = true;
         showCongratsModal();
@@ -398,7 +490,7 @@
     }
   }
 
-  // Show Congratulations Modal Popup
+  // Congratulations Modal
   function showCongratsModal() {
     elements.congratsStreakDisplay.textContent = `${state.streak} ${state.streak === 1 ? 'Day' : 'Days'}`;
     elements.congratsIntakeText.textContent = `${state.currentIntake} ml`;
@@ -411,6 +503,36 @@
   function closeCongratsModal() {
     elements.congratsModal.classList.add('hidden');
     document.body.style.overflow = '';
+  }
+
+  // ==========================================================================
+  // Feature 2: Manual Streak Reset Feature
+  // ==========================================================================
+  /**
+   * Prompts the user with confirmation before resetting their streak to 0.
+   * Updates state, localStorage, and all UI elements immediately.
+   */
+  function promptResetStreak() {
+    elements.modalCurrentStreakCount.textContent = state.streak;
+    elements.resetStreakModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeResetStreakModal() {
+    elements.resetStreakModal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function executeStreakReset() {
+    state.streak = 0;
+    state.lastCompletedDate = null;
+    localStorage.setItem(STORAGE_KEYS.STREAK, '0');
+    localStorage.removeItem(STORAGE_KEYS.LAST_COMPLETED_DATE);
+
+    closeResetStreakModal();
+    updateUI();
+    renderCalendar();
+    showToast('Streak has been reset back to 0 days.');
   }
 
   // Add water intake
@@ -428,12 +550,13 @@
       time: timeStr
     });
 
+    syncTodayHistory();
     saveState();
     updateUI();
     playWaterDropSound();
     showToast(`+${amount} ml logged! Keep going 💧`);
 
-    // Check if goal met
+    // Check if daily goal reached
     checkGoalMilestone();
   }
 
@@ -451,8 +574,10 @@
       state.logs.shift();
     }
 
+    syncTodayHistory();
     saveState();
     updateUI();
+    renderCalendar();
     showToast(`-${actualReduction} ml removed.`);
   }
 
@@ -462,13 +587,15 @@
     if (index !== -1) {
       const removed = state.logs.splice(index, 1)[0];
       state.currentIntake = Math.max(0, state.currentIntake - removed.amount);
+      syncTodayHistory();
       saveState();
       updateUI();
+      renderCalendar();
       showToast(`Removed entry of ${removed.amount} ml.`);
     }
   }
 
-  // Reset current day's intake
+  // Reset today's intake
   function resetDay() {
     if (state.currentIntake === 0 && state.logs.length === 0) {
       showToast("Today's progress is already empty.");
@@ -480,9 +607,175 @@
       state.currentIntake = 0;
       state.logs = [];
       state.celebratedToday = false;
+      syncTodayHistory();
       saveState();
       updateUI();
+      renderCalendar();
       showToast("Today's intake has been reset.");
+    }
+  }
+
+  // ==========================================================================
+  // Feature 3: Live Interactive Calendar
+  // ==========================================================================
+  /**
+   * Renders the dynamic calendar for the current viewing month:
+   * - Highlights today's date clearly.
+   * - Automatically marks completed goal days with a fire icon (🔥) based on historical data.
+   * - Handles navigation controls (< Previous Month / Next Month >) and day inspection.
+   */
+  function renderCalendar() {
+    const viewYear = state.calendarViewDate.getFullYear();
+    const viewMonth = state.calendarViewDate.getMonth();
+
+    // Month & Year Label (e.g. "September 2026")
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    elements.calMonthYearLabel.textContent = `${monthNames[viewMonth]} ${viewYear}`;
+
+    // Clear previous grid
+    elements.calendarDaysGrid.innerHTML = '';
+
+    // First day of month (0 = Sunday, 1 = Monday, etc.)
+    const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
+    // Total days in current month
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    // Days in previous month
+    const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate();
+
+    const todayStr = getTodayDateString();
+
+    // 1. Render padding days from previous month
+    for (let x = firstDayIndex; x > 0; x--) {
+      const dayNum = prevMonthDays - x + 1;
+      const prevDate = new Date(viewYear, viewMonth - 1, dayNum);
+      const dateStr = getFormattedDate(prevDate);
+
+      const cell = createCalendarCell(dayNum, dateStr, true);
+      elements.calendarDaysGrid.appendChild(cell);
+    }
+
+    // 2. Render days for current month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const thisDate = new Date(viewYear, viewMonth, day);
+      const dateStr = getFormattedDate(thisDate);
+
+      const cell = createCalendarCell(day, dateStr, false);
+      elements.calendarDaysGrid.appendChild(cell);
+    }
+
+    // 3. Render padding days from next month to complete standard 7-col grid
+    const totalCells = firstDayIndex + daysInMonth;
+    const remainingCells = (7 - (totalCells % 7)) % 7;
+    for (let i = 1; i <= remainingCells; i++) {
+      const nextDate = new Date(viewYear, viewMonth + 1, i);
+      const dateStr = getFormattedDate(nextDate);
+
+      const cell = createCalendarCell(i, dateStr, true);
+      elements.calendarDaysGrid.appendChild(cell);
+    }
+
+    // Update selected date inspector
+    updateCalendarInspector(state.selectedCalendarDate || todayStr);
+  }
+
+  function createCalendarCell(dayNum, dateStr, isOtherMonth) {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cal-day';
+    cell.setAttribute('data-date', dateStr);
+    cell.setAttribute('aria-label', `Date ${dateStr}`);
+
+    if (isOtherMonth) {
+      cell.classList.add('other-month');
+    }
+
+    const todayStr = getTodayDateString();
+    const isToday = dateStr === todayStr;
+    if (isToday) {
+      cell.classList.add('today');
+    }
+
+    if (state.selectedCalendarDate === dateStr) {
+      cell.classList.add('selected');
+    }
+
+    // Check history or today for goal completion
+    const dayData = (dateStr === todayStr)
+      ? { intake: state.currentIntake, goal: state.dailyGoal, completed: state.currentIntake >= state.dailyGoal }
+      : state.history[dateStr];
+
+    let iconHtml = '';
+    let subtext = '';
+
+    if (dayData && dayData.intake > 0) {
+      if (dayData.completed) {
+        cell.classList.add('completed');
+        iconHtml = '<span class="cal-day-fire" title="Goal Met! 🔥">🔥</span>';
+        subtext = '<span class="cal-day-sub">100%</span>';
+      } else {
+        cell.classList.add('partial');
+        iconHtml = '<span class="cal-day-drop" title="In Progress 💧">💧</span>';
+        const percent = Math.round((dayData.intake / dayData.goal) * 100);
+        subtext = `<span class="cal-day-sub">${percent}%</span>`;
+      }
+    } else {
+      cell.classList.add('empty');
+    }
+
+    cell.innerHTML = `
+      <span class="cal-day-num">${dayNum}</span>
+      <div class="cal-day-badge">${iconHtml}</div>
+      ${subtext}
+    `;
+
+    cell.addEventListener('click', () => {
+      state.selectedCalendarDate = dateStr;
+      document.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
+      cell.classList.add('selected');
+      updateCalendarInspector(dateStr);
+    });
+
+    return cell;
+  }
+
+  function updateCalendarInspector(dateStr) {
+    if (!dateStr) return;
+
+    const todayStr = getTodayDateString();
+    const isToday = dateStr === todayStr;
+
+    const parts = dateStr.split('-');
+    const displayDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const formattedDate = displayDate.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    elements.calDetailDate.textContent = isToday ? `Today (${formattedDate})` : formattedDate;
+
+    const dayData = (dateStr === todayStr)
+      ? { intake: state.currentIntake, goal: state.dailyGoal, completed: state.currentIntake >= state.dailyGoal }
+      : state.history[dateStr];
+
+    if (dayData && dayData.intake > 0) {
+      elements.calDetailStats.textContent = `${dayData.intake} ml logged / ${dayData.goal} ml target`;
+      if (dayData.completed) {
+        elements.calDetailBadge.textContent = 'Goal Reached 🔥';
+        elements.calDetailBadge.className = 'badge success';
+      } else {
+        const percent = Math.round((dayData.intake / dayData.goal) * 100);
+        elements.calDetailBadge.textContent = `${percent}% Completed`;
+        elements.calDetailBadge.className = 'badge';
+      }
+    } else {
+      elements.calDetailStats.textContent = isToday ? '0 ml logged today' : 'No water logged for this day';
+      elements.calDetailBadge.textContent = isToday ? 'In Progress' : 'No Data';
+      elements.calDetailBadge.className = 'badge';
     }
   }
 
@@ -503,14 +796,16 @@
     }
     elements.completionBadge.textContent = `${percent}%`;
 
-    // Streak UI
+    // Streak UI in Header and Modals
     elements.streakCount.textContent = state.streak;
+    elements.profileModalStreakCount.textContent = `${state.streak} ${state.streak === 1 ? 'Day' : 'Days'} Consecutive`;
+
     if (state.streak > 0) {
       elements.streakBadge.classList.add('active-streak');
       elements.streakBadge.setAttribute('title', `${state.streak} consecutive days hydration goal reached!`);
     } else {
       elements.streakBadge.classList.remove('active-streak');
-      elements.streakBadge.setAttribute('title', 'Complete today\'s goal to begin your streak!');
+      elements.streakBadge.setAttribute('title', "Complete today's goal to begin your streak!");
     }
 
     // Meter & Waves
@@ -694,8 +989,10 @@
       state.dailyGoal = calculated;
     }
 
+    syncTodayHistory();
     saveState();
     updateUI();
+    renderCalendar();
     closeProfileModal();
     showToast(`Hydration goal updated to ${state.dailyGoal} ml! 💧`);
 
@@ -763,6 +1060,37 @@
       resetDay();
     });
 
+    // Streak Reset Triggers
+    elements.quickStreakResetBtn.addEventListener('click', promptResetStreak);
+    elements.streakBadge.addEventListener('click', promptResetStreak);
+    elements.modalResetStreakBtn.addEventListener('click', promptResetStreak);
+
+    // Confirmation Modal Actions
+    elements.cancelResetStreakBtn.addEventListener('click', closeResetStreakModal);
+    elements.confirmResetStreakBtn.addEventListener('click', executeStreakReset);
+    elements.resetStreakModal.addEventListener('click', (e) => {
+      if (e.target === elements.resetStreakModal) {
+        closeResetStreakModal();
+      }
+    });
+
+    // Calendar Navigation
+    elements.calPrevMonthBtn.addEventListener('click', () => {
+      state.calendarViewDate.setMonth(state.calendarViewDate.getMonth() - 1);
+      renderCalendar();
+    });
+
+    elements.calNextMonthBtn.addEventListener('click', () => {
+      state.calendarViewDate.setMonth(state.calendarViewDate.getMonth() + 1);
+      renderCalendar();
+    });
+
+    elements.calTodayBtn.addEventListener('click', () => {
+      state.calendarViewDate = new Date();
+      state.selectedCalendarDate = getTodayDateString();
+      renderCalendar();
+    });
+
     // Inline Goal Editing
     elements.editGoalBtn.addEventListener('click', () => {
       elements.goalInput.value = state.dailyGoal;
@@ -781,8 +1109,10 @@
         state.dailyGoal = newGoal;
         state.profile.isOverridden = true;
         state.profile.customGoal = newGoal;
+        syncTodayHistory();
         saveState();
         updateUI();
+        renderCalendar();
         elements.goalEditForm.classList.add('hidden');
         showToast(`Target updated to ${newGoal} ml!`);
         checkGoalMilestone();
@@ -794,8 +1124,10 @@
       state.dailyGoal = calculated;
       state.profile.isOverridden = false;
       state.profile.calculatedGoal = calculated;
+      syncTodayHistory();
       saveState();
       updateUI();
+      renderCalendar();
       elements.goalEditForm.classList.add('hidden');
       showToast(`Target reset to profile recommendation (${calculated} ml)! 💧`);
       checkGoalMilestone();
@@ -827,6 +1159,8 @@
           closeCongratsModal();
         } else if (!elements.profileModal.classList.contains('hidden')) {
           closeProfileModal();
+        } else if (!elements.resetStreakModal.classList.contains('hidden')) {
+          closeResetStreakModal();
         }
       }
     });
@@ -868,6 +1202,17 @@
 
     // Theme Toggle
     elements.themeToggleBtn.addEventListener('click', toggleTheme);
+
+    // Automatic New Day Event Triggers (Focus, Visibility, and Periodic Interval)
+    window.addEventListener('focus', checkAndHandleDateRollover);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        checkAndHandleDateRollover();
+      }
+    });
+
+    // Periodic check every 60 seconds
+    setInterval(checkAndHandleDateRollover, 60000);
   }
 
   // Format today's date in header
@@ -883,6 +1228,7 @@
     applyTheme(state.theme);
     setupEventListeners();
     updateUI();
+    renderCalendar();
   }
 
   if (document.readyState === 'loading') {

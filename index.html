@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Drink H2O - Smart daily hydration tracker with personalized profile calculations, streak tracking, and celebration milestones.">
+  <meta name="description" content="Drink H2O - Smart daily hydration tracker with personalized profile calculations, streak tracking, interactive calendar, and celebration milestones.">
   <meta name="theme-color" content="#0284c7">
   <title>Drink H2O - Daily Hydration Tracker</title>
   <link rel="stylesheet" href="style.css">
@@ -29,13 +29,20 @@
 
       <div class="header-actions">
         <!-- Goal Streak Counter Badge -->
-        <div class="streak-badge" id="streakBadge" title="Consecutive days hydration goal completed">
+        <div class="streak-badge" id="streakBadge" title="Consecutive days hydration goal completed" role="button" tabindex="0" aria-label="Hydration streak count">
           <span class="streak-fire" aria-hidden="true">🔥</span>
           <span class="streak-text" id="streakText">Streak: <strong id="streakCount">0</strong> Days</span>
         </div>
 
+        <!-- Quick Reset Streak Action Button -->
+        <button id="quickStreakResetBtn" class="icon-btn danger-hover" aria-label="Reset Streak to 0" title="Reset Streak to 0">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </button>
+
         <!-- Profile / Calculator Modal Trigger -->
-        <button id="profileModalBtn" class="icon-btn" aria-label="Open Personal Profile & Goal Calculator" title="Personal Profile & Goal Calculator">
+        <button id="profileModalBtn" class="icon-btn" aria-label="Open Personal Profile & Goal Calculator" title="Personal Profile & Settings">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
@@ -176,6 +183,66 @@
         </div>
       </section>
 
+      <!-- Live Interactive Calendar Section -->
+      <section class="card calendar-card" id="calendarSection">
+        <div class="calendar-header">
+          <div class="calendar-title-wrap">
+            <div class="calendar-icon-badge">📅</div>
+            <div>
+              <h2 class="section-title">Hydration Calendar</h2>
+              <p class="section-subtitle">Monthly streak tracking & history</p>
+            </div>
+          </div>
+
+          <div class="calendar-nav-group">
+            <button id="calPrevMonthBtn" class="icon-btn-sm" aria-label="Previous Month" title="Previous Month">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <span id="calMonthYearLabel" class="calendar-month-label">September 2026</span>
+            <button id="calNextMonthBtn" class="icon-btn-sm" aria-label="Next Month" title="Next Month">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+            <button id="calTodayBtn" class="btn btn-outline btn-xs" title="Jump to current date">Today</button>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="calendar-legend">
+          <span class="legend-item"><span class="legend-badge goal-met">🔥</span> Goal Met</span>
+          <span class="legend-item"><span class="legend-badge in-progress">💧</span> Logged</span>
+          <span class="legend-item"><span class="legend-badge today-dot"></span> Today</span>
+        </div>
+
+        <!-- Days of Week Header -->
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>Sun</span>
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+        </div>
+
+        <!-- Dynamic Days Grid -->
+        <div class="calendar-days-grid" id="calendarDaysGrid">
+          <!-- Dynamically populated via script.js -->
+        </div>
+
+        <!-- Selected Date Quick Inspector -->
+        <div class="calendar-day-detail" id="calendarDayDetail">
+          <div class="day-detail-info">
+            <span class="day-detail-date" id="calDetailDate">Today, Sep 19</span>
+            <span class="day-detail-stats" id="calDetailStats">0 ml / 2500 ml</span>
+          </div>
+          <span class="badge" id="calDetailBadge">In Progress</span>
+        </div>
+      </section>
+
       <!-- Today's Log History -->
       <section class="card history-card">
         <div class="history-header">
@@ -232,6 +299,26 @@
       </div>
     </div>
 
+    <!-- Manual Reset Streak Confirmation Modal -->
+    <div id="resetStreakModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="resetStreakTitle">
+      <div class="modal-card confirm-modal-card">
+        <div class="confirm-icon-wrap fire-warning">
+          <span class="confirm-icon">🔥</span>
+        </div>
+        <h2 id="resetStreakTitle" class="modal-title text-center">Reset Streak?</h2>
+        <p class="confirm-modal-text">
+          Are you sure you want to reset your streak back to <strong>0</strong>?
+        </p>
+        <p class="confirm-modal-subtext">
+          Your current streak of <strong id="modalCurrentStreakCount">0</strong> consecutive days will be cleared and cannot be undone.
+        </p>
+        <div class="modal-actions confirm-actions">
+          <button type="button" id="cancelResetStreakBtn" class="btn btn-outline">Keep Streak</button>
+          <button type="button" id="confirmResetStreakBtn" class="btn btn-danger">Yes, Reset Streak</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Personal Profile & Goal Calculator Modal -->
     <div id="profileModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
       <div class="modal-card">
@@ -244,11 +331,28 @@
               </svg>
             </div>
             <div>
-              <h2 id="profileModalTitle" class="modal-title">Personal Profile & Goal</h2>
-              <p class="modal-subtitle">Auto-calculates your recommended daily hydration</p>
+              <h2 id="profileModalTitle" class="modal-title">Personal Profile & Settings</h2>
+              <p class="modal-subtitle">Auto-calculates recommended daily hydration</p>
             </div>
           </div>
           <button id="closeProfileModalBtn" class="close-btn" aria-label="Close profile modal">✕</button>
+        </div>
+
+        <!-- Streak Management Box inside Profile Modal -->
+        <div class="profile-streak-box">
+          <div class="profile-streak-header">
+            <div class="profile-streak-info">
+              <span class="streak-icon-sm">🔥</span>
+              <div>
+                <span class="profile-streak-label">Current Streak</span>
+                <span class="profile-streak-count" id="profileModalStreakCount">0 Consecutive Days</span>
+              </div>
+            </div>
+            <button type="button" id="modalResetStreakBtn" class="btn btn-danger-outline btn-sm">
+              Reset Streak
+            </button>
+          </div>
+          <p class="profile-streak-hint">Reach your daily target consistently each day to build your streak.</p>
         </div>
 
         <form id="profileForm" class="profile-form">
@@ -361,7 +465,7 @@
 
     <!-- Footer -->
     <footer class="app-footer">
-      <p>Drink H2O • Personalized Daily Hydration</p>
+      <p>Drink H2O • Personalized Daily Hydration Tracker</p>
     </footer>
   </div>
 
