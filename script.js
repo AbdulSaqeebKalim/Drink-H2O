@@ -752,6 +752,8 @@
       elements.nextSipCountdown.className = 'next-sip-timer urgent';
       elements.nextSipProgressBar.style.width = '100%';
       elements.sipNowAlert.classList.remove('hidden');
+      sendSipNotification();
+      
 
       // Trigger browser notification once when interval passes
       if (state.remindersEnabled && Notification.permission === 'granted') {
@@ -2160,3 +2162,64 @@
     init();
   }
 })();
+// --- WEB AUDIO CHIME & NATIVE NOTIFICATION SYSTEM --- //
+
+// Synthesize a water chime sound using Web Audio API (No MP3 required)
+function playWaterChime() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
+    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5 note
+
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.5);
+  } catch (e) {
+    console.warn('Audio playback restricted by browser:', e);
+  }
+}
+
+// Request Native Browser Notification Permission
+async function requestHydrationNotifications() {
+  // Play chime to unlock browser AudioContext on user interaction
+  playWaterChime();
+
+  if (!('Notification' in window)) {
+    alert('This browser does not support desktop notifications.');
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    alert('✅ Notifications & Sound Alerts Enabled!');
+    new Notification('Drink H2O 💧', {
+      body: 'Notifications activated! We will alert you when it is time to drink.',
+      icon: 'favicon.ico'
+    });
+  } else if (permission === 'denied') {
+    alert('⚠️ Notification permission denied. Please allow notifications in your browser site settings.');
+  }
+}
+
+// Trigger Alert on Sip Timer Completion
+function sendSipNotification() {
+  playWaterChime();
+
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('Time for a Sip! 💧', {
+      body: 'Take a glass of water now to maintain your daily hydration target.',
+      tag: 'next-sip-alert',
+      renotify: true
+    });
+  }
+}
+
