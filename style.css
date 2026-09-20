@@ -302,8 +302,10 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-main);
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
@@ -1611,10 +1613,10 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px 20px;
+  padding: 16px;
   width: 100%;
   max-width: 440px;
-  max-height: 90vh;
+  max-height: 92vh;
   overflow-y: auto;
   box-shadow: var(--shadow-modal);
   position: relative;
@@ -1629,8 +1631,8 @@ body {
 .modal-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .modal-title-group {
@@ -1672,15 +1674,17 @@ body {
   background: var(--surface-secondary);
   border: 1px solid var(--border);
   color: var(--text-muted);
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: var(--transition);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .close-btn:hover {
@@ -1693,11 +1697,11 @@ body {
   background: var(--surface-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .reminder-header {
@@ -2029,8 +2033,8 @@ input:checked + .slider:before {
   background: var(--fire-bg);
   border: 1.5px solid var(--fire-border);
   border-radius: var(--radius-md);
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
 }
 
 .profile-streak-header {
@@ -2262,8 +2266,8 @@ input:checked + .slider:before {
   background: linear-gradient(135deg, var(--primary-light), var(--surface-secondary));
   border: 1.5px solid var(--primary);
   border-radius: var(--radius-md);
-  padding: 14px;
-  margin-bottom: 16px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
 }
 
 .calc-preview-info {
@@ -2281,54 +2285,54 @@ input:checked + .slider:before {
 }
 
 .calc-preview-target {
-  font-size: 1.45rem;
+  font-size: 1.35rem;
   font-weight: 800;
   color: var(--primary);
 }
 
 .calc-preview-target small {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
 .calc-preview-liters {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-muted);
   margin-left: 4px;
 }
 
 .calc-preview-glasses {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   font-weight: 600;
 }
 
 .calc-preview-water-icon {
-  font-size: 2rem;
+  font-size: 1.8rem;
   filter: drop-shadow(0 2px 6px rgba(2, 132, 199, 0.3));
 }
 
 .profile-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .form-row.two-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .form-group label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-main);
 }
@@ -2350,7 +2354,8 @@ input:checked + .slider:before {
 .unit-btn {
   border: none;
   background: none;
-  padding: 2px 8px;
+  padding: 4px 10px;
+  min-height: 28px;
   font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-muted);
@@ -2367,13 +2372,13 @@ input:checked + .slider:before {
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface-secondary);
   color: var(--text-main);
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   transition: var(--transition);
 }
@@ -2405,7 +2410,7 @@ input:checked + .slider:before {
 }
 
 .checkbox-group {
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 .custom-checkbox-label {
@@ -2413,14 +2418,14 @@ input:checked + .slider:before {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-main);
 }
 
 .custom-checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   accent-color: var(--primary);
   cursor: pointer;
 }
@@ -2429,8 +2434,8 @@ input:checked + .slider:before {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 10px;
-  padding-top: 14px;
+  margin-top: 6px;
+  padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 
@@ -2494,15 +2499,18 @@ input:checked + .slider:before {
     gap: 6px;
   }
   .streak-badge {
-    padding: 5px 9px;
+    padding: 6px 10px;
     gap: 4px;
+    min-height: 44px;
   }
   .streak-text {
-    font-size: 0.72rem;
+    font-size: 0.74rem;
   }
   .icon-btn {
-    width: 35px;
-    height: 35px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
@@ -2511,17 +2519,19 @@ input:checked + .slider:before {
     display: none;
   }
   .streak-badge {
-    padding: 4px 7px;
+    padding: 6px 8px;
   }
   .streak-text {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
   }
   .header-actions {
     gap: 5px;
   }
   .icon-btn {
-    width: 33px;
-    height: 33px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
@@ -2537,7 +2547,7 @@ input:checked + .slider:before {
     font-size: 2.1rem;
   }
   .modal-card {
-    padding: 18px 14px;
+    padding: 14px 12px;
   }
   .form-row.two-cols:not(.schedule-grid) {
     grid-template-columns: 1fr;

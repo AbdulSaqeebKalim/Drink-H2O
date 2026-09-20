@@ -41,20 +41,20 @@
 
       <div class="header-actions">
         <!-- Goal Streak Counter Badge (Click to manage/reset) -->
-        <div class="streak-badge" id="streakBadge" title="Consecutive days hydration goal completed. Tap to view or reset." role="button" tabindex="0" aria-label="Hydration streak count">
+        <div class="streak-badge" id="streakBadge" title="Hydration Streak: Tap to view or reset" role="button" tabindex="0" aria-label="Hydration streak count">
           <span class="streak-fire" aria-hidden="true">🔥</span>
-          <span class="streak-text" id="streakText">Streak: <strong id="streakCount">0</strong> Days</span>
+          <span class="streak-text" id="streakText"><strong id="streakCount">0</strong>d</span>
         </div>
 
         <!-- Light / Dark Theme Toggle -->
-        <button id="themeToggleBtn" class="icon-btn ripple-btn" aria-label="Toggle light or dark theme" title="Toggle theme">
+        <button id="themeToggleBtn" class="icon-btn ripple-btn" aria-label="Toggle theme" title="Toggle theme">
           <svg id="themeIcon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
 
         <!-- Profile & Settings Modal Trigger -->
-        <button id="profileModalBtn" class="icon-btn ripple-btn" aria-label="Open Personal Profile & Settings" title="Personal Profile, Sleep Schedule & Settings">
+        <button id="profileModalBtn" class="icon-btn ripple-btn" aria-label="Profile and Settings" title="Profile and Settings">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
@@ -210,11 +210,11 @@
 
           <!-- Quick Action Row: Log 250ml & Reset Timer -->
           <div class="next-sip-actions">
-            <button class="btn btn-primary next-sip-quick-btn ripple-btn" id="nextSipQuickLogBtn" aria-label="Log 250ml and reset timer">
+            <button class="btn btn-primary next-sip-quick-btn ripple-btn" id="nextSipQuickLogBtn" aria-label="Log 250 ml water">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
               </svg>
-              <span>Log 250ml &amp; Reset Timer</span>
+              <span>+250 ml</span>
             </button>
             <button class="btn btn-ghost-sm ripple-btn" id="nextSipPostponeBtn" title="Postpone timer by 10 minutes" aria-label="Snooze reminder for 10 minutes">
               +10m Snooze
@@ -235,56 +235,52 @@
           <button class="btn btn-preset ripple-btn" data-amount="150" aria-label="Add 150 ml water">
             <span class="preset-icon">🥛</span>
             <span class="preset-amount">+150 ml</span>
-            <span class="preset-desc">Small Glass</span>
           </button>
           <button class="btn btn-preset ripple-btn active" data-amount="250" aria-label="Add 250 ml water">
             <span class="preset-icon">💧</span>
             <span class="preset-amount">+250 ml</span>
-            <span class="preset-desc">Standard Glass</span>
           </button>
           <button class="btn btn-preset ripple-btn" data-amount="500" aria-label="Add 500 ml water">
             <span class="preset-icon">🍶</span>
             <span class="preset-amount">+500 ml</span>
-            <span class="preset-desc">Water Bottle</span>
           </button>
           <button class="btn btn-preset ripple-btn" data-amount="750" aria-label="Add 750 ml water">
             <span class="preset-icon">🫙</span>
             <span class="preset-amount">+750 ml</span>
-            <span class="preset-desc">Large Bottle</span>
           </button>
         </div>
 
         <!-- Custom Intake Input & Custom Add Button -->
         <form id="customLogForm" class="custom-log-form">
-          <label for="customAmountInput" class="custom-input-label">Custom Water Amount (ml):</label>
+          <label for="customAmountInput" class="custom-input-label">Custom Amount (ml):</label>
           <div class="input-group">
             <input type="number" id="customAmountInput" placeholder="Enter ml (e.g. 350)" min="10" max="3000" step="10" required>
-            <button type="submit" class="btn btn-primary ripple-btn" id="addCustomBtn">
+            <button type="submit" class="btn btn-primary ripple-btn" id="addCustomBtn" aria-label="Log water amount">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              Add Water
+              Log Water
             </button>
           </div>
         </form>
 
         <!-- Secondary Actions (Undo & Reset Day) -->
         <div class="secondary-actions">
-          <button id="undoBtn" class="btn btn-outline ripple-btn" title="Undo latest intake entry or subtract 250ml">
+          <button id="undoBtn" class="btn btn-outline ripple-btn" title="Undo latest intake entry or subtract 250ml" aria-label="Undo entry">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 7v6h6"></path>
               <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
             </svg>
-            Undo Last Entry
+            Undo
           </button>
-          <button id="resetDayBtn" class="btn btn-danger-outline ripple-btn" title="Reset today's progress to 0 ml">
+          <button id="resetDayBtn" class="btn btn-danger-outline ripple-btn" title="Reset today's progress to 0 ml" aria-label="Reset today's logs">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="1 4 1 10 7 10"></polyline>
               <polyline points="23 20 23 14 17 14"></polyline>
               <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
             </svg>
-            Reset Day
+            Reset
           </button>
         </div>
       </section>
@@ -662,7 +658,7 @@
           <!-- Modal Actions -->
           <div class="modal-actions">
             <button type="button" id="cancelProfileBtn" class="btn btn-outline ripple-btn">Cancel</button>
-            <button type="submit" class="btn btn-primary ripple-btn">Save & Apply Settings</button>
+            <button type="submit" class="btn btn-primary ripple-btn">Save</button>
           </div>
         </form>
       </div>
