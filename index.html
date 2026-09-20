@@ -162,6 +162,67 @@
         </div>
       </section>
 
+      <!-- Next Sip Live Countdown Card -->
+      <section class="card next-sip-card" id="nextSipCard" aria-label="Next Sip Countdown">
+        <div class="next-sip-header">
+          <div class="next-sip-title-wrap">
+            <div class="next-sip-icon-wrap" id="nextSipIconWrap" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h2 class="next-sip-title">Next Sip</h2>
+              <p class="next-sip-subtitle" id="nextSipSubtitle">Smart hydration schedule</p>
+            </div>
+          </div>
+          <span class="next-sip-badge" id="nextSipBadge">On Schedule</span>
+        </div>
+
+        <div class="next-sip-body">
+          <div class="next-sip-timer-row">
+            <div class="next-sip-target-wrap">
+              <span class="next-sip-label">Scheduled For</span>
+              <span class="next-sip-time" id="nextSipTime">--:--</span>
+            </div>
+            <div class="next-sip-countdown-wrap">
+              <span class="next-sip-label">Countdown</span>
+              <span class="next-sip-timer" id="nextSipCountdown">--:--</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar for interval completion -->
+          <div class="next-sip-progress-track" aria-hidden="true">
+            <div class="next-sip-progress-bar" id="nextSipProgressBar"></div>
+          </div>
+
+          <!-- Sip Now Visual Alert Badge (Visible when timer reaches 00:00) -->
+          <div class="sip-now-alert hidden" id="sipNowAlert" role="alert">
+            <div class="sip-now-alert-content">
+              <span class="sip-now-pulse-icon" aria-hidden="true">💧</span>
+              <div class="sip-now-text">
+                <strong>Time to drink water! 💧</strong>
+                <span>Take a refreshing sip to stay energized.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Row: Log 250ml & Reset Timer -->
+          <div class="next-sip-actions">
+            <button class="btn btn-primary next-sip-quick-btn ripple-btn" id="nextSipQuickLogBtn" aria-label="Log 250ml and reset timer">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+              </svg>
+              <span>Log 250ml &amp; Reset Timer</span>
+            </button>
+            <button class="btn btn-ghost-sm ripple-btn" id="nextSipPostponeBtn" title="Postpone timer by 10 minutes" aria-label="Snooze reminder for 10 minutes">
+              +10m Snooze
+            </button>
+          </div>
+        </div>
+      </section>
+
       <!-- Water Logging Actions with Water Presets & Custom Input -->
       <section class="card action-card">
         <div class="action-card-header">

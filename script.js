@@ -27,7 +27,8 @@
     WAKE_TIME: 'drink_h2o_wake_time',
     BED_TIME: 'drink_h2o_bed_time',
     REMINDER_MODE: 'drink_h2o_reminder_mode',
-    LAST_REMINDER_TIMESTAMP: 'drink_h2o_last_reminder_timestamp'
+    LAST_REMINDER_TIMESTAMP: 'drink_h2o_last_reminder_timestamp',
+    NEXT_SIP_TARGET: 'drink_h2o_next_sip_target'
   };
 
   // Default Profile Configuration
@@ -65,10 +66,13 @@
     wakeTime: '07:00',
     bedTime: '23:00',
     reminderMode: 'smart',
-    smartIntervalMinutes: 120
+    smartIntervalMinutes: 120,
+    nextSipTargetTime: null,
+    nextSipIntervalMs: 120 * 60 * 1000
   };
 
   let reminderTimerId = null;
+  let nextSipCountdownTimerId = null;
   let rippleTimeoutId = null;
 
   // DOM Elements
@@ -102,6 +106,18 @@
     glassesCount: document.getElementById('glassesCount'),
     statusMessage: document.getElementById('statusMessage'),
     logCount: document.getElementById('logCount'),
+
+    // Next Sip Live Countdown Card
+    nextSipCard: document.getElementById('nextSipCard'),
+    nextSipIconWrap: document.getElementById('nextSipIconWrap'),
+    nextSipSubtitle: document.getElementById('nextSipSubtitle'),
+    nextSipBadge: document.getElementById('nextSipBadge'),
+    nextSipTime: document.getElementById('nextSipTime'),
+    nextSipCountdown: document.getElementById('nextSipCountdown'),
+    nextSipProgressBar: document.getElementById('nextSipProgressBar'),
+    sipNowAlert: document.getElementById('sipNowAlert'),
+    nextSipQuickLogBtn: document.getElementById('nextSipQuickLogBtn'),
+    nextSipPostponeBtn: document.getElementById('nextSipPostponeBtn'),
 
     // Action Logging
     presetButtons: document.querySelectorAll('.btn-preset'),
@@ -558,6 +574,227 @@
     } else {
       // Overnight sleep schedule: e.g. wake 07:00, bed 01:00 (past midnight)
       return nowMins >= wakeMins || nowMins < bedMins;
+    }
+  }
+
+  /**
+   * Calculate dynamic interval based on remaining daily goal & remaining awake minutes today.
+   * Example: Remaining volume needed / standard glass (250ml) = remaining sips.
+   * Divide remaining awake time by remaining sips to get exact dynamic interval.
+   */
+  function calculateDynamicRemainingInterval() {
+    const remainingVolume = Math.max(0, state.dailyGoal - state.currentIntake);
+    if (remainingVolume <= 0) {
+      return {
+        remainingGlasses: 0,
+        intervalMinutes: state.smartIntervalMinutes || 120,
+        goalReached: true
+      };
+    }
+
+    const standardGlassMl = 250;
+    const remainingGlasses = Math.max(1, Math.ceil(remainingVolume / standardGlassMl));
+
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const wakeMins = timeStringToMinutes(state.wakeTime);
+    const bedMins = timeStringToMinutes(state.bedTime);
+
+    let remainingAwakeMins = 0;
+    if (bedMins > wakeMins) {
+      // Standard schedule, e.g. 07:00 to 23:00
+      if (nowMins < wakeMins) {
+        remainingAwakeMins = bedMins - wakeMins;
+      } else if (nowMins >= bedMins) {
+        remainingAwakeMins = 0;
+      } else {
+        remainingAwakeMins = bedMins - nowMins;
+      }
+    } else {
+      // Overnight schedule across midnight (e.g. wake 07:00, bed 01:00)
+      if (nowMins >= wakeMins) {
+        remainingAwakeMins = (24 * 60 - nowMins) + bedMins;
+      } else if (nowMins < bedMins) {
+        remainingAwakeMins = bedMins - nowMins;
+      } else {
+        // In sleep window
+        remainingAwakeMins = 0;
+      }
+    }
+
+    // If active awake time remaining is very short or in sleep, fallback to total awake time distribution
+    if (remainingAwakeMins < 30) {
+      const totalAwake = calculateAwakeHours(state.wakeTime, state.bedTime);
+      remainingAwakeMins = totalAwake.minutes;
+    }
+
+    const intervalMinutes = Math.min(180, Math.max(15, Math.round(remainingAwakeMins / remainingGlasses)));
+
+    return {
+      remainingGlasses,
+      intervalMinutes,
+      goalReached: false
+    };
+  }
+
+  // ==========================================================================
+  // Next Sip Countdown Engine
+  // ==========================================================================
+  function computeNextSipIntervalMs() {
+    if (state.reminderMode === 'custom' && state.reminderIntervalMinutes > 0) {
+      return state.reminderIntervalMinutes * 60 * 1000;
+    }
+    const dynamic = calculateDynamicRemainingInterval();
+    return Math.max(15, dynamic.intervalMinutes) * 60 * 1000;
+  }
+
+  function resetNextSipTimer(explicitDurationMs = null) {
+    const intervalMs = explicitDurationMs || computeNextSipIntervalMs();
+    state.nextSipIntervalMs = intervalMs;
+    state.nextSipTargetTime = Date.now() + intervalMs;
+    localStorage.setItem(STORAGE_KEYS.NEXT_SIP_TARGET, state.nextSipTargetTime.toString());
+    updateNextSipCountdownUI();
+  }
+
+  function postponeNextSipTimer(minutes = 10) {
+    const addMs = minutes * 60 * 1000;
+    const now = Date.now();
+    if (!state.nextSipTargetTime || state.nextSipTargetTime < now) {
+      state.nextSipTargetTime = now + addMs;
+    } else {
+      state.nextSipTargetTime += addMs;
+    }
+    localStorage.setItem(STORAGE_KEYS.NEXT_SIP_TARGET, state.nextSipTargetTime.toString());
+    showToast(`Timer snoozed +${minutes} mins ⏰`);
+    updateNextSipCountdownUI();
+  }
+
+  function initNextSipCountdown() {
+    const storedTarget = localStorage.getItem(STORAGE_KEYS.NEXT_SIP_TARGET);
+    const now = Date.now();
+
+    if (storedTarget) {
+      const parsed = parseInt(storedTarget, 10);
+      if (!isNaN(parsed) && parsed > now - (30 * 60 * 1000)) {
+        state.nextSipTargetTime = parsed;
+      } else {
+        resetNextSipTimer();
+      }
+    } else {
+      resetNextSipTimer();
+    }
+
+    if (nextSipCountdownTimerId) {
+      clearInterval(nextSipCountdownTimerId);
+    }
+    nextSipCountdownTimerId = setInterval(updateNextSipCountdownUI, 1000);
+    updateNextSipCountdownUI();
+  }
+
+  function updateNextSipCountdownUI() {
+    if (!elements.nextSipCard) return;
+
+    const now = new Date();
+    const nowMs = now.getTime();
+    const isAwake = isCurrentlyAwakeTime(state.wakeTime, state.bedTime, now);
+    const remainingVolume = Math.max(0, state.dailyGoal - state.currentIntake);
+
+    // Goal Completed State
+    if (remainingVolume <= 0) {
+      elements.nextSipCard.className = 'card next-sip-card';
+      elements.nextSipBadge.textContent = 'Goal Completed! 🎉';
+      elements.nextSipBadge.className = 'next-sip-badge completed';
+      elements.nextSipSubtitle.textContent = 'Daily hydration achieved!';
+      elements.nextSipTime.textContent = 'Goal Met';
+      elements.nextSipCountdown.textContent = '100% ✨';
+      elements.nextSipCountdown.className = 'next-sip-timer ready';
+      elements.nextSipProgressBar.style.width = '100%';
+      elements.sipNowAlert.classList.add('hidden');
+      return;
+    }
+
+    // Sleeping / Quiet Hours State
+    if (!isAwake) {
+      elements.nextSipCard.className = 'card next-sip-card sleeping';
+      elements.nextSipBadge.textContent = 'Sleeping Hours 🌙';
+      elements.nextSipBadge.className = 'next-sip-badge sleeping';
+      elements.nextSipSubtitle.textContent = 'Resting quietly until morning';
+      elements.nextSipTime.textContent = `Wake: ${formatTime12h(state.wakeTime)}`;
+      elements.nextSipCountdown.textContent = 'Timer Paused 🌙';
+      elements.nextSipCountdown.className = 'next-sip-timer';
+      elements.nextSipProgressBar.style.width = '0%';
+      elements.sipNowAlert.classList.add('hidden');
+      return;
+    }
+
+    // Normal Awake Tracking
+    if (!state.nextSipTargetTime) {
+      resetNextSipTimer();
+    }
+
+    const diffMs = state.nextSipTargetTime - nowMs;
+    const intervalMs = state.nextSipIntervalMs || (120 * 60 * 1000);
+    const targetDate = new Date(state.nextSipTargetTime);
+    const scheduledTimeStr = targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    elements.nextSipTime.textContent = scheduledTimeStr;
+    const dynamic = calculateDynamicRemainingInterval();
+    elements.nextSipSubtitle.textContent = state.reminderMode === 'smart'
+      ? `${dynamic.remainingGlasses} glasses left • ~${dynamic.intervalMinutes}m interval`
+      : `Custom interval • ${state.reminderIntervalMinutes}m`;
+
+    if (diffMs <= 0) {
+      // Timer has reached 00:00 - DUE ALERT
+      elements.nextSipCard.className = 'card next-sip-card due';
+      elements.nextSipBadge.textContent = 'Time for Water! 💧';
+      elements.nextSipBadge.className = 'next-sip-badge due';
+      elements.nextSipCountdown.textContent = '00:00';
+      elements.nextSipCountdown.className = 'next-sip-timer urgent';
+      elements.nextSipProgressBar.style.width = '100%';
+      elements.sipNowAlert.classList.remove('hidden');
+
+      // Trigger browser notification once when interval passes
+      if (state.remindersEnabled && Notification.permission === 'granted') {
+        const lastAlertStr = localStorage.getItem(STORAGE_KEYS.LAST_REMINDER_TIMESTAMP);
+        const lastAlert = lastAlertStr ? parseInt(lastAlertStr, 10) : 0;
+        if (nowMs - lastAlert >= 60000) {
+          sendBrowserNotification(
+            'Time for a sip! 💧',
+            `It's time for your scheduled sip! Drink 250ml to stay on target (${remainingVolume} ml left today).`
+          );
+          localStorage.setItem(STORAGE_KEYS.LAST_REMINDER_TIMESTAMP, nowMs.toString());
+        }
+      }
+    } else {
+      // Active Countdown
+      elements.nextSipCard.className = 'card next-sip-card';
+      elements.nextSipBadge.textContent = 'On Schedule';
+      elements.nextSipBadge.className = 'next-sip-badge';
+      elements.sipNowAlert.classList.add('hidden');
+
+      const totalSecs = Math.floor(diffMs / 1000);
+      const hours = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+
+      let countdownText = '';
+      if (hours > 0) {
+        countdownText = `${hours}h ${mins < 10 ? '0' + mins : mins}m ${secs < 10 ? '0' + secs : secs}s`;
+      } else {
+        countdownText = `${mins < 10 ? '0' + mins : mins}:${secs < 10 ? '0' + secs : secs}`;
+      }
+      elements.nextSipCountdown.textContent = countdownText;
+
+      if (mins < 5 && hours === 0) {
+        elements.nextSipCountdown.className = 'next-sip-timer urgent';
+      } else {
+        elements.nextSipCountdown.className = 'next-sip-timer';
+      }
+
+      // Progress bar (0% at beginning of interval -> 100% when timer reaches zero)
+      const elapsedMs = Math.max(0, intervalMs - diffMs);
+      const progressPercent = Math.min(100, Math.max(0, (elapsedMs / intervalMs) * 100));
+      elements.nextSipProgressBar.style.width = `${progressPercent.toFixed(1)}%`;
     }
   }
 
@@ -1066,6 +1303,7 @@
 
     syncTodayHistory();
     saveState();
+    resetNextSipTimer(); // Reset next sip countdown timer when a drink is logged
     updateUI();
     triggerWaterDisturbance(); // Wave crest disturbance & liquid container bounce
     playWaterDropSound();
@@ -1350,6 +1588,7 @@
 
     elements.totalLoggedBadge.textContent = `${intake} ml Total`;
     renderLogs();
+    updateNextSipCountdownUI();
   }
 
   // Render Log History Items with Clean Water Formatting & Individual Delete Buttons
@@ -1616,6 +1855,19 @@
     // Undo & Reset Day
     elements.undoBtn.addEventListener('click', undoLastLog);
     elements.resetDayBtn.addEventListener('click', resetDay);
+
+    // Next Sip Quick Log (250ml) & Postpone
+    if (elements.nextSipQuickLogBtn) {
+      elements.nextSipQuickLogBtn.addEventListener('click', () => {
+        addWater(250);
+        showToast('Logged 250ml! Next sip countdown refreshed 💧');
+      });
+    }
+    if (elements.nextSipPostponeBtn) {
+      elements.nextSipPostponeBtn.addEventListener('click', () => {
+        postponeNextSipTimer(10);
+      });
+    }
 
     // Streak Reset Prompts
     if (elements.quickStreakResetBtn) {
@@ -1895,6 +2147,7 @@
     loadState();
     applyTheme(state.theme);
     initReminderControls();
+    initNextSipCountdown();
     setupEventListeners();
     updateUI();
     renderCalendar();
