@@ -1940,7 +1940,7 @@ input:checked + .slider:before {
   align-items: baseline;
   justify-content: space-between;
   gap: 4px;
-  padding: 2px 0;
+  padding: 0;
 }
 
 .interval-caption {
@@ -1957,10 +1957,7 @@ input:checked + .slider:before {
 }
 
 .smart-interval-explanation {
-  font-size: 0.73rem;
-  color: var(--text-muted);
-  line-height: 1.42;
-  margin: 0;
+  display: none;
 }
 
 .reminder-options {
