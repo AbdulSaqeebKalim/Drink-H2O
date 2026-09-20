@@ -311,6 +311,27 @@ body {
   background: var(--danger-bg);
 }
 
+#pwaInstallBtn {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-light);
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+#pwaInstallBtn:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(2, 132, 199, 0); }
+}
+
+.hidden {
+  display: none !important;
+}
+
 .icon-btn-sm {
   background: var(--surface-secondary);
   border: 1px solid var(--border);

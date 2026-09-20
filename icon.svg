@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="50%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+    <linearGradient id="dropGrad" x1="20%" y1="10%" x2="80%" y2="90%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="60%" stop-color="#e0f2fe" />
+      <stop offset="100%" stop-color="#bae6fd" />
+    </linearGradient>
+    <linearGradient id="dropHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0369a1" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background with subtle rounded shape -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Outer Water Droplet with Drop Shadow -->
+  <path d="M 256 96 C 256 96 144 236 144 324 C 144 386 194 436 256 436 C 318 436 368 386 368 324 C 368 236 256 96 256 96 Z"
+        fill="url(#dropGrad)"
+        filter="url(#shadow)" />
+
+  <!-- Droplet Gloss Highlight -->
+  <path d="M 256 128 C 256 128 176 244 172 316 C 170 300 178 260 216 200 C 236 168 256 128 256 128 Z"
+        fill="url(#dropHighlight)" />
+
+  <!-- Inner Soft Droplet Crest -->
+  <ellipse cx="256" cy="344" rx="64" ry="40" fill="#38bdf8" fill-opacity="0.35" />
+  <path d="M 200 340 Q 256 310 312 340 Q 256 370 200 340 Z" fill="#0284c7" fill-opacity="0.4" />
+</svg>

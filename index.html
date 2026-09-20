@@ -6,6 +6,15 @@
   <meta name="description" content="Drink H2O - Daily hydration tracker with fluid wave animations, streak tracking, browser reminders, interactive calendar, and celebration milestones.">
   <meta name="theme-color" content="#0284c7">
   <title>Drink H2O - Daily Hydration Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Drink H2O">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,6 +65,15 @@
         <button id="themeToggleBtn" class="icon-btn ripple-btn" aria-label="Toggle light or dark theme" title="Toggle theme">
           <svg id="themeIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- Install PWA Button (Visible when installation is supported) -->
+        <button id="pwaInstallBtn" class="icon-btn ripple-btn hidden" aria-label="Install Drink H2O App" title="Install App to Device">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
         </button>
       </div>
@@ -557,5 +575,19 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+    // Service Worker Registration for Offline Capability
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('[Drink H2O] Service Worker successfully registered:', reg.scope);
+          })
+          .catch((err) => {
+            console.error('[Drink H2O] Service Worker registration failed:', err);
+          });
+      });
+    }
+  </script>
 </body>
 </html>

@@ -73,6 +73,7 @@
     profileModalBtn: document.getElementById('profileModalBtn'),
     themeToggleBtn: document.getElementById('themeToggleBtn'),
     themeIcon: document.getElementById('themeIcon'),
+    pwaInstallBtn: document.getElementById('pwaInstallBtn'),
     confettiCanvas: document.getElementById('confettiCanvas'),
 
     // Goal & Circular Wave Tracker
@@ -1516,6 +1517,50 @@
     // Theme Toggle
     elements.themeToggleBtn.addEventListener('click', toggleTheme);
 
+    // PWA BeforeInstallPrompt (Native Android & Desktop Install Flow)
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (elements.pwaInstallBtn) {
+        elements.pwaInstallBtn.classList.remove('hidden');
+      }
+    });
+
+    if (elements.pwaInstallBtn) {
+      elements.pwaInstallBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        try {
+          const choiceResult = await deferredPrompt.userChoice;
+          if (choiceResult && choiceResult.outcome === 'accepted') {
+            showToast('Installing Drink H2O... 💧');
+          }
+        } catch (err) {
+          console.warn('Install prompt error:', err);
+        }
+        deferredPrompt = null;
+        elements.pwaInstallBtn.classList.add('hidden');
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      if (elements.pwaInstallBtn) {
+        elements.pwaInstallBtn.classList.add('hidden');
+      }
+      showToast('Drink H2O is installed and ready for offline use! 📱');
+    });
+
+    // Offline / Online Connection State Listeners
+    window.addEventListener('offline', () => {
+      showToast('Offline mode active — your logs and streaks are saved locally! 💧');
+    });
+
+    window.addEventListener('online', () => {
+      showToast('Connection restored! 💧');
+    });
+
     // Window Events for Date Rollover
     window.addEventListener('focus', checkAndHandleDateRollover);
     document.addEventListener('visibilitychange', () => {
@@ -1535,6 +1580,22 @@
     elements.currentDateDisplay.textContent = new Date().toLocaleDateString(undefined, options);
   }
 
+  // Progressive Web App Service Worker Registration
+  function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('./sw.js')
+          .then((registration) => {
+            console.log('[Drink H2O] Service Worker active:', registration.scope);
+          })
+          .catch((err) => {
+            console.warn('[Drink H2O] Service Worker registration failed:', err);
+          });
+      });
+    }
+  }
+
   // App Initialization
   function init() {
     initHeaderDate();
@@ -1544,6 +1605,7 @@
     setupEventListeners();
     updateUI();
     renderCalendar();
+    registerServiceWorker();
   }
 
   if (document.readyState === 'loading') {
