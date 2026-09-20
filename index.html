@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Drink H2O - Daily hydration tracker with fluid wave animations, streak tracking, browser reminders, interactive calendar, and celebration milestones.">
+  <meta name="description" content="Drink H2O - Daily hydration tracker with fluid wave animations, streak tracking, smart sleep-aware reminders, interactive calendar, and celebration milestones.">
   <meta name="theme-color" content="#0284c7">
   <title>Drink H2O - Daily Hydration Tracker</title>
   <link rel="manifest" href="manifest.json">
@@ -25,55 +25,39 @@
   <canvas id="confettiCanvas" class="confetti-canvas" aria-hidden="true"></canvas>
 
   <div class="app-container">
-    <!-- Header -->
+    <!-- Header: Compact, Centered, Flexbox-Aligned -->
     <header class="app-header">
       <div class="brand">
-        <div class="brand-icon">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
           </svg>
         </div>
-        <div>
+        <div class="brand-info">
           <h1 class="brand-title">Drink H2O</h1>
           <p class="brand-subtitle" id="currentDateDisplay">Today</p>
         </div>
       </div>
 
       <div class="header-actions">
-        <!-- Goal Streak Counter Badge -->
-        <div class="streak-badge" id="streakBadge" title="Consecutive days hydration goal completed" role="button" tabindex="0" aria-label="Hydration streak count">
+        <!-- Goal Streak Counter Badge (Click to manage/reset) -->
+        <div class="streak-badge" id="streakBadge" title="Consecutive days hydration goal completed. Tap to view or reset." role="button" tabindex="0" aria-label="Hydration streak count">
           <span class="streak-fire" aria-hidden="true">🔥</span>
           <span class="streak-text" id="streakText">Streak: <strong id="streakCount">0</strong> Days</span>
         </div>
 
-        <!-- Quick Reset Streak Action Button -->
-        <button id="quickStreakResetBtn" class="icon-btn danger-hover ripple-btn" aria-label="Reset Streak to 0" title="Reset Streak to 0">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-          </svg>
-        </button>
-
-        <!-- Profile & Settings Modal Trigger -->
-        <button id="profileModalBtn" class="icon-btn ripple-btn" aria-label="Open Personal Profile & Settings" title="Personal Profile & Settings">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </button>
-
         <!-- Light / Dark Theme Toggle -->
         <button id="themeToggleBtn" class="icon-btn ripple-btn" aria-label="Toggle light or dark theme" title="Toggle theme">
-          <svg id="themeIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg id="themeIcon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
 
-        <!-- Install PWA Button (Visible when installation is supported) -->
-        <button id="pwaInstallBtn" class="icon-btn ripple-btn hidden" aria-label="Install Drink H2O App" title="Install App to Device">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
+        <!-- Profile & Settings Modal Trigger -->
+        <button id="profileModalBtn" class="icon-btn ripple-btn" aria-label="Open Personal Profile & Settings" title="Personal Profile, Sleep Schedule & Settings">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
           </svg>
         </button>
       </div>
@@ -81,7 +65,7 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <!-- Goal & Circular Visual Progress Card with Realistic Fluid Wave Animation -->
+      <!-- Goal & Circular Visual Progress Card with Fluid Wave Animation -->
       <section class="card progress-card">
         <div class="goal-header">
           <div>
@@ -113,7 +97,7 @@
             <div class="wave-container is-empty" id="waveContainer">
               <!-- Dual Animated Wave SVG Surface -->
               <div class="water-waves" id="waterWaves">
-                <!-- Back Wave Layer (Lighter/Subtle Depth) -->
+                <!-- Back Wave Layer -->
                 <svg class="wave-svg wave-back" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="waveBackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -124,7 +108,7 @@
                   <path d="M 0,20 Q 150,45 300,20 T 600,20 Q 750,45 900,20 T 1200,20 L 1200,60 L 0,60 Z" fill="url(#waveBackGrad)" />
                 </svg>
 
-                <!-- Front Wave Layer (Vibrant Ocean Surface Crest) -->
+                <!-- Front Wave Layer -->
                 <svg class="wave-svg wave-front" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="waveFrontGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -137,7 +121,7 @@
                 </svg>
               </div>
 
-              <!-- Main Water Liquid Body (Clean 2D Ocean Gradient) -->
+              <!-- Main Water Liquid Body -->
               <div class="water-body">
                 <div class="bubbles-wrap" id="bubblesWrap" aria-hidden="true">
                   <span class="bubble b1"></span>
@@ -261,7 +245,7 @@
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
             </button>
-            <span id="calMonthYearLabel" class="calendar-month-label">September 2026</span>
+            <span id="calMonthYearLabel" class="calendar-month-label">Month</span>
             <button id="calNextMonthBtn" class="icon-btn-sm ripple-btn" aria-label="Next Month" title="Next Month">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
@@ -291,13 +275,13 @@
 
         <!-- Dynamic Days Grid -->
         <div class="calendar-days-grid" id="calendarDaysGrid">
-          <!-- Dynamically populated via script.js -->
+          <!-- Populated dynamically via script.js -->
         </div>
 
-        <!-- Selected Date Quick Inspector -->
+        <!-- Selected Date Detail Card -->
         <div class="calendar-day-detail" id="calendarDayDetail">
           <div class="day-detail-info">
-            <span class="day-detail-date" id="calDetailDate">Today, Sep 19</span>
+            <span class="day-detail-date" id="calDetailDate">Today</span>
             <span class="day-detail-stats" id="calDetailStats">0 ml / 2500 ml</span>
           </div>
           <span class="badge" id="calDetailBadge">In Progress</span>
@@ -314,7 +298,7 @@
           <span class="badge" id="totalLoggedBadge">0 ml Total</span>
         </div>
         <ul id="logList" class="log-list">
-          <!-- Dynamically populated via script.js -->
+          <!-- Populated dynamically via script.js -->
         </ul>
         <div id="emptyLogState" class="empty-state">
           <span class="empty-state-icon">💧</span>
@@ -374,7 +358,7 @@
           Are you sure you want to reset your streak back to <strong>0</strong>?
         </p>
         <p class="confirm-modal-subtext">
-          Your current streak of <strong id="modalCurrentStreakCount">0</strong> consecutive days will be cleared and cannot be undone.
+          Your current streak of <strong id="modalCurrentStreakCount">0</strong> consecutive days will be cleared.
         </p>
         <div class="modal-actions confirm-actions">
           <button type="button" id="cancelResetStreakBtn" class="btn btn-outline ripple-btn">Keep Streak</button>
@@ -383,7 +367,7 @@
       </div>
     </div>
 
-    <!-- Personal Profile & Settings Modal with Browser Reminders Toggle -->
+    <!-- Personal Profile, Sleep/Wake Schedule & Reminder Settings Modal -->
     <div id="profileModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
       <div class="modal-card">
         <div class="modal-header">
@@ -395,40 +379,98 @@
               </svg>
             </div>
             <div>
-              <h2 id="profileModalTitle" class="modal-title">Personal Profile & Settings</h2>
-              <p class="modal-subtitle">Auto-calculates recommended daily hydration</p>
+              <h2 id="profileModalTitle" class="modal-title">Profile & Reminders</h2>
+              <p class="modal-subtitle">Configure sleep schedule, goal formula & reminders</p>
             </div>
           </div>
           <button id="closeProfileModalBtn" class="close-btn" aria-label="Close profile modal">✕</button>
         </div>
 
-        <!-- Browser Reminders Settings Section -->
+        <!-- Smart Sleep/Wake Schedule & Reminder System Section -->
         <div class="reminder-settings-box">
           <div class="reminder-header">
             <div class="reminder-info">
               <span class="reminder-icon">🔔</span>
               <div>
-                <span class="reminder-title">Hydration Reminders</span>
-                <span class="reminder-subtitle" id="reminderStatusText">Get periodic browser reminders</span>
+                <span class="reminder-title">Drink Reminders</span>
+                <span class="reminder-subtitle" id="reminderStatusText">Smart notifications during active awake hours</span>
               </div>
             </div>
-            <label class="switch" aria-label="Toggle hydration browser reminders">
+            <label class="switch" aria-label="Toggle hydration reminders">
               <input type="checkbox" id="reminderToggle">
               <span class="slider round"></span>
             </label>
           </div>
 
+          <!-- Sleep & Wake Schedule Inputs -->
+          <div class="schedule-settings-section">
+            <div class="schedule-section-header">
+              <div class="schedule-title-wrap">
+                <span class="schedule-title-icon">⏰</span>
+                <span class="schedule-title-text">Sleep & Wake Schedule</span>
+              </div>
+              <span class="schedule-awake-badge" id="scheduleAwakeBadge">16 hrs awake</span>
+            </div>
+
+            <div class="form-row two-cols schedule-grid">
+              <div class="form-group schedule-field">
+                <label for="wakeTimeInput">Wake-up Time</label>
+                <div class="time-input-wrap">
+                  <span class="time-prefix-icon">🌅</span>
+                  <input type="time" id="wakeTimeInput" value="07:00" required>
+                </div>
+              </div>
+
+              <div class="form-group schedule-field">
+                <label for="bedTimeInput">Bedtime</label>
+                <div class="time-input-wrap">
+                  <span class="time-prefix-icon">🌙</span>
+                  <input type="time" id="bedTimeInput" value="23:00" required>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Hydration Interval Calculation Card -->
+          <div class="smart-interval-card" id="smartIntervalCard">
+            <div class="smart-interval-top">
+              <span class="smart-interval-tag">
+                <span class="pulse-dot"></span> Smart Calculation
+              </span>
+              <span class="smart-interval-glasses" id="smartGlassesText">8 glasses (250ml each)</span>
+            </div>
+            <div class="smart-interval-highlight">
+              <span class="interval-caption">Recommended Reminder Frequency:</span>
+              <span class="interval-value" id="smartIntervalValue">Every 2 hours</span>
+            </div>
+            <p class="smart-interval-explanation" id="smartIntervalExplanation">
+              Based on your 16h active awake time and 2000 ml goal, drinking 1 glass every 2 hours keeps you consistently hydrated without interrupting your sleep.
+            </p>
+          </div>
+
+          <!-- Reminder Options (Expanded when enabled) -->
           <div id="reminderOptions" class="reminder-options hidden">
             <div class="reminder-interval-row">
-              <label for="reminderIntervalSelect">Remind me every:</label>
-              <select id="reminderIntervalSelect">
-                <option value="30">30 minutes</option>
-                <option value="45">45 minutes</option>
-                <option value="60" selected>60 minutes (1 hour)</option>
-                <option value="90">90 minutes (1.5 hours)</option>
-                <option value="120">120 minutes (2 hours)</option>
+              <label for="reminderModeSelect">Schedule Mode:</label>
+              <select id="reminderModeSelect">
+                <option value="smart" selected>Smart Dynamic Interval (Recommended)</option>
+                <option value="custom">Custom Fixed Interval</option>
               </select>
             </div>
+
+            <div class="reminder-interval-row hidden" id="customIntervalRow">
+              <label for="reminderIntervalSelect">Custom Frequency:</label>
+              <select id="reminderIntervalSelect">
+                <option value="30">Every 30 minutes</option>
+                <option value="45">Every 45 minutes</option>
+                <option value="60">Every 60 minutes (1 hour)</option>
+                <option value="90">Every 90 minutes (1.5 hours)</option>
+                <option value="120">Every 120 minutes (2 hours)</option>
+                <option value="150">Every 150 minutes (2.5 hours)</option>
+                <option value="180">Every 180 minutes (3 hours)</option>
+              </select>
+            </div>
+
             <div class="reminder-action-row">
               <button type="button" id="testReminderBtn" class="btn btn-outline btn-xs ripple-btn">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -437,7 +479,7 @@
                 </svg>
                 Send Test Alert
               </button>
-              <span class="reminder-perm-status" id="reminderPermStatus">Status: Inactive</span>
+              <span class="reminder-perm-status" id="reminderPermStatus">Active (Awake Hours Only)</span>
             </div>
           </div>
         </div>
@@ -474,7 +516,7 @@
             <div class="calc-preview-water-icon">💧</div>
           </div>
 
-          <!-- Age & Gender Fields -->
+          <!-- Age & Biological Sex Fields -->
           <div class="form-row two-cols">
             <div class="form-group">
               <label for="profAge">Age (years)</label>
@@ -559,7 +601,7 @@
           <!-- Modal Actions -->
           <div class="modal-actions">
             <button type="button" id="cancelProfileBtn" class="btn btn-outline ripple-btn">Cancel</button>
-            <button type="submit" class="btn btn-primary ripple-btn">Save & Apply Goal</button>
+            <button type="submit" class="btn btn-primary ripple-btn">Save & Apply Settings</button>
           </div>
         </form>
       </div>
@@ -570,18 +612,18 @@
 
     <!-- Footer -->
     <footer class="app-footer">
-      <p>Drink H2O • Personalized Daily Hydration Tracker</p>
+      <p>Drink H2O • Smart Schedule Daily Hydration Tracker</p>
     </footer>
   </div>
 
   <script src="script.js"></script>
   <script>
-    // Service Worker Registration for Offline Capability
+    // Progressive Web App Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then((reg) => {
-            console.log('[Drink H2O] Service Worker successfully registered:', reg.scope);
+            console.log('[Drink H2O] Service Worker active:', reg.scope);
           })
           .catch((err) => {
             console.error('[Drink H2O] Service Worker registration failed:', err);

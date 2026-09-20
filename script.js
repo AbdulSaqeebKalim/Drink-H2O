@@ -23,7 +23,11 @@
     LAST_COMPLETED_DATE: 'drink_h2o_last_completed_date',
     HISTORY: 'drink_h2o_history',
     REMINDERS_ENABLED: 'drink_h2o_reminders_enabled',
-    REMINDER_INTERVAL: 'drink_h2o_reminder_interval'
+    REMINDER_INTERVAL: 'drink_h2o_reminder_interval',
+    WAKE_TIME: 'drink_h2o_wake_time',
+    BED_TIME: 'drink_h2o_bed_time',
+    REMINDER_MODE: 'drink_h2o_reminder_mode',
+    LAST_REMINDER_TIMESTAMP: 'drink_h2o_last_reminder_timestamp'
   };
 
   // Default Profile Configuration
@@ -57,7 +61,11 @@
     calendarViewDate: new Date(),
     selectedCalendarDate: null,
     remindersEnabled: false,
-    reminderIntervalMinutes: 60
+    reminderIntervalMinutes: 60,
+    wakeTime: '07:00',
+    bedTime: '23:00',
+    reminderMode: 'smart',
+    smartIntervalMinutes: 120
   };
 
   let reminderTimerId = null;
@@ -139,13 +147,24 @@
     profileModalStreakCount: document.getElementById('profileModalStreakCount'),
     modalResetStreakBtn: document.getElementById('modalResetStreakBtn'),
 
-    // Browser Reminders Controls
+    // Browser Reminders & Schedule Controls
     reminderToggle: document.getElementById('reminderToggle'),
     reminderOptions: document.getElementById('reminderOptions'),
+    reminderModeSelect: document.getElementById('reminderModeSelect'),
+    customIntervalRow: document.getElementById('customIntervalRow'),
     reminderIntervalSelect: document.getElementById('reminderIntervalSelect'),
     testReminderBtn: document.getElementById('testReminderBtn'),
     reminderStatusText: document.getElementById('reminderStatusText'),
     reminderPermStatus: document.getElementById('reminderPermStatus'),
+
+    // Sleep Schedule & Smart Interval UI
+    wakeTimeInput: document.getElementById('wakeTimeInput'),
+    bedTimeInput: document.getElementById('bedTimeInput'),
+    scheduleAwakeBadge: document.getElementById('scheduleAwakeBadge'),
+    smartIntervalCard: document.getElementById('smartIntervalCard'),
+    smartGlassesText: document.getElementById('smartGlassesText'),
+    smartIntervalValue: document.getElementById('smartIntervalValue'),
+    smartIntervalExplanation: document.getElementById('smartIntervalExplanation'),
 
     // Profile Inputs & Calculation Previews
     previewGoalMl: document.getElementById('previewGoalMl'),
@@ -463,26 +482,148 @@
   }
 
   // ==========================================================================
-  // Browser Hydration Reminders
+  // Sleep/Wake Schedule & Smart Dynamic Reminders System
   // ==========================================================================
+  function timeStringToMinutes(timeStr) {
+    if (!timeStr || typeof timeStr !== 'string') return 420; // 07:00 AM default
+    const parts = timeStr.split(':');
+    const hours = parseInt(parts[0], 10) || 0;
+    const mins = parseInt(parts[1], 10) || 0;
+    return (hours * 60 + mins) % 1440;
+  }
+
+  function formatTime12h(timeStr) {
+    if (!timeStr) return '';
+    const totalMins = timeStringToMinutes(timeStr);
+    const hours24 = Math.floor(totalMins / 60) % 24;
+    const mins = totalMins % 60;
+    const period = hours24 >= 12 ? 'PM' : 'AM';
+    const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+    const minsStr = mins < 10 ? `0${mins}` : mins;
+    return `${hours12}:${minsStr} ${period}`;
+  }
+
+  function calculateAwakeHours(wakeStr, bedStr) {
+    const wakeMins = timeStringToMinutes(wakeStr);
+    const bedMins = timeStringToMinutes(bedStr);
+    let diff = bedMins - wakeMins;
+    if (diff <= 0) {
+      diff += 24 * 60; // Overnight schedule across midnight (e.g. 07:00 to 01:00)
+    }
+    const hours = diff / 60;
+    return {
+      minutes: diff,
+      hours: hours,
+      hoursText: `${Number(hours.toFixed(1))} hrs awake`
+    };
+  }
+
+  /**
+   * Calculate smart interval: (Goal / Awake Hours / 250ml)
+   * Example: Goal 2000ml (8 glasses), Awake 16 hrs => 16 / 8 = 2 hrs (120 mins)
+   */
+  function calculateSmartInterval(dailyGoalMl, awakeMinutes) {
+    const standardGlassMl = 250;
+    const glasses = Math.max(1, Math.round(dailyGoalMl / standardGlassMl));
+    const rawIntervalMinutes = Math.max(20, Math.round(awakeMinutes / glasses));
+
+    let intervalText = '';
+    if (rawIntervalMinutes >= 60) {
+      const hours = Math.floor(rawIntervalMinutes / 60);
+      const mins = rawIntervalMinutes % 60;
+      if (mins === 0) {
+        intervalText = `Every ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+      } else {
+        intervalText = `Every ${hours}h ${mins}m`;
+      }
+    } else {
+      intervalText = `Every ${rawIntervalMinutes} minutes`;
+    }
+
+    return {
+      glasses,
+      intervalMinutes: rawIntervalMinutes,
+      intervalText
+    };
+  }
+
+  function isCurrentlyAwakeTime(wakeStr, bedStr, date = new Date()) {
+    const nowMins = date.getHours() * 60 + date.getMinutes();
+    const wakeMins = timeStringToMinutes(wakeStr);
+    const bedMins = timeStringToMinutes(bedStr);
+
+    if (bedMins > wakeMins) {
+      // Standard daytime schedule: e.g. 07:00 to 23:00
+      return nowMins >= wakeMins && nowMins < bedMins;
+    } else {
+      // Overnight sleep schedule: e.g. wake 07:00, bed 01:00 (past midnight)
+      return nowMins >= wakeMins || nowMins < bedMins;
+    }
+  }
+
+  function updateSmartScheduleUI() {
+    const wake = elements.wakeTimeInput ? (elements.wakeTimeInput.value || state.wakeTime) : state.wakeTime;
+    const bed = elements.bedTimeInput ? (elements.bedTimeInput.value || state.bedTime) : state.bedTime;
+
+    const awake = calculateAwakeHours(wake, bed);
+    const activeGoal = state.dailyGoal || 2000;
+    const smart = calculateSmartInterval(activeGoal, awake.minutes);
+
+    state.smartIntervalMinutes = smart.intervalMinutes;
+
+    if (elements.scheduleAwakeBadge) {
+      elements.scheduleAwakeBadge.textContent = awake.hoursText;
+    }
+
+    if (elements.smartGlassesText) {
+      elements.smartGlassesText.textContent = `${smart.glasses} glasses (250ml each)`;
+    }
+
+    if (elements.smartIntervalValue) {
+      elements.smartIntervalValue.textContent = smart.intervalText;
+    }
+
+    if (elements.smartIntervalExplanation) {
+      const wake12 = formatTime12h(wake);
+      const bed12 = formatTime12h(bed);
+      elements.smartIntervalExplanation.textContent =
+        `Based on your ${awake.hoursText} (${wake12} – ${bed12}) and ${activeGoal} ml target, drinking 1 glass ${smart.intervalText.toLowerCase()} keeps you consistently hydrated without night-time interruption.`;
+    }
+
+    updateReminderUI();
+  }
+
   function initReminderControls() {
     const isSupported = 'Notification' in window;
     if (!isSupported) {
-      elements.reminderPermStatus.textContent = 'Not supported in browser';
-      elements.reminderToggle.disabled = true;
+      if (elements.reminderPermStatus) {
+        elements.reminderPermStatus.textContent = 'Not supported';
+      }
+      if (elements.reminderToggle) {
+        elements.reminderToggle.disabled = true;
+      }
       return;
     }
 
     const savedEnabled = localStorage.getItem(STORAGE_KEYS.REMINDERS_ENABLED) === 'true';
     const savedInterval = parseInt(localStorage.getItem(STORAGE_KEYS.REMINDER_INTERVAL), 10) || 60;
+    const savedWake = localStorage.getItem(STORAGE_KEYS.WAKE_TIME) || '07:00';
+    const savedBed = localStorage.getItem(STORAGE_KEYS.BED_TIME) || '23:00';
+    const savedMode = localStorage.getItem(STORAGE_KEYS.REMINDER_MODE) || 'smart';
 
     state.remindersEnabled = savedEnabled;
     state.reminderIntervalMinutes = savedInterval;
+    state.wakeTime = savedWake;
+    state.bedTime = savedBed;
+    state.reminderMode = savedMode;
 
-    elements.reminderToggle.checked = savedEnabled;
-    elements.reminderIntervalSelect.value = savedInterval;
+    if (elements.reminderToggle) elements.reminderToggle.checked = savedEnabled;
+    if (elements.reminderIntervalSelect) elements.reminderIntervalSelect.value = savedInterval;
+    if (elements.wakeTimeInput) elements.wakeTimeInput.value = savedWake;
+    if (elements.bedTimeInput) elements.bedTimeInput.value = savedBed;
+    if (elements.reminderModeSelect) elements.reminderModeSelect.value = savedMode;
 
-    updateReminderUI();
+    updateSmartScheduleUI();
 
     if (savedEnabled && Notification.permission === 'granted') {
       scheduleReminders();
@@ -490,21 +631,52 @@
   }
 
   function updateReminderUI() {
-    const isGranted = Notification.permission === 'granted';
-    const isDenied = Notification.permission === 'denied';
+    if (!elements.reminderOptions) return;
+
+    const isGranted = 'Notification' in window && Notification.permission === 'granted';
+    const isDenied = 'Notification' in window && Notification.permission === 'denied';
+    const isAwake = isCurrentlyAwakeTime(state.wakeTime, state.bedTime);
+
+    const effectiveInterval = state.reminderMode === 'smart'
+      ? state.smartIntervalMinutes
+      : state.reminderIntervalMinutes;
+
+    let intervalLabel = state.reminderMode === 'smart'
+      ? `Smart: ${elements.smartIntervalValue ? elements.smartIntervalValue.textContent : `Every ${Math.round(effectiveInterval)}m`}`
+      : `Every ${effectiveInterval}m`;
 
     if (state.remindersEnabled && isGranted) {
       elements.reminderOptions.classList.remove('hidden');
-      elements.reminderStatusText.textContent = `Active every ${state.reminderIntervalMinutes}m`;
-      elements.reminderPermStatus.textContent = 'Active 🔔';
+      if (isAwake) {
+        elements.reminderStatusText.textContent = `Active • ${intervalLabel}`;
+        elements.reminderPermStatus.textContent = 'Active (Awake Hours) 🔔';
+        elements.reminderPermStatus.className = 'reminder-perm-status active';
+      } else {
+        elements.reminderStatusText.textContent = `Quiet Hours (Sleeping) 🌙 • ${intervalLabel}`;
+        elements.reminderPermStatus.textContent = 'Quiet Hours (Sleeping) 🌙';
+        elements.reminderPermStatus.className = 'reminder-perm-status quiet';
+      }
     } else if (state.remindersEnabled && !isGranted) {
       elements.reminderOptions.classList.remove('hidden');
       elements.reminderStatusText.textContent = 'Permission needed';
-      elements.reminderPermStatus.textContent = isDenied ? 'Permission denied' : 'Awaiting prompt';
+      elements.reminderPermStatus.textContent = isDenied ? 'Permission Denied ✕' : 'Awaiting Prompt...';
+      elements.reminderPermStatus.className = 'reminder-perm-status';
     } else {
       elements.reminderOptions.classList.add('hidden');
-      elements.reminderStatusText.textContent = 'Get periodic browser alerts';
-      elements.reminderPermStatus.textContent = isGranted ? 'Granted' : 'Inactive';
+      elements.reminderStatusText.textContent = 'Smart notifications during active awake hours';
+      elements.reminderPermStatus.textContent = isGranted ? 'Granted (Off)' : 'Inactive';
+      elements.reminderPermStatus.className = 'reminder-perm-status';
+    }
+
+    if (elements.reminderModeSelect) {
+      elements.reminderModeSelect.value = state.reminderMode;
+    }
+    if (elements.customIntervalRow) {
+      if (state.reminderMode === 'custom') {
+        elements.customIntervalRow.classList.remove('hidden');
+      } else {
+        elements.customIntervalRow.classList.add('hidden');
+      }
     }
   }
 
@@ -524,7 +696,7 @@
           scheduleReminders();
           updateReminderUI();
           showToast('Hydration reminders enabled! 🔔');
-          sendBrowserNotification('Drink H2O Reminders On! 💧', 'We will gently remind you to drink water regularly.');
+          sendBrowserNotification('Drink H2O Reminders On! 💧', 'We will gently remind you to hydrate during your active awake hours.');
         } else {
           state.remindersEnabled = false;
           elements.reminderToggle.checked = false;
@@ -563,18 +735,50 @@
       reminderTimerId = null;
     }
 
-    if (!state.remindersEnabled || Notification.permission !== 'granted') return;
+    if (!state.remindersEnabled || !('Notification' in window) || Notification.permission !== 'granted') {
+      return;
+    }
 
-    const intervalMs = state.reminderIntervalMinutes * 60 * 1000;
-    reminderTimerId = setInterval(() => {
+    // Run check immediately and then periodically (every 45 seconds) to check schedule window and elapsed interval
+    checkAndTriggerReminder();
+    reminderTimerId = setInterval(checkAndTriggerReminder, 45000);
+  }
+
+  function checkAndTriggerReminder() {
+    if (!state.remindersEnabled || !('Notification' in window) || Notification.permission !== 'granted') {
+      return;
+    }
+
+    const now = new Date();
+    const isAwake = isCurrentlyAwakeTime(state.wakeTime, state.bedTime, now);
+
+    // Sync status badge in settings modal if visible
+    updateReminderUI();
+
+    // STRICT SLEEP CHECK: Only alert during active awake hours
+    if (!isAwake) {
+      return;
+    }
+
+    const effectiveIntervalMinutes = state.reminderMode === 'smart'
+      ? state.smartIntervalMinutes
+      : state.reminderIntervalMinutes;
+    const intervalMs = Math.max(15, effectiveIntervalMinutes) * 60 * 1000;
+
+    const lastSentStr = localStorage.getItem(STORAGE_KEYS.LAST_REMINDER_TIMESTAMP);
+    const lastSent = lastSentStr ? parseInt(lastSentStr, 10) : 0;
+    const nowTime = Date.now();
+
+    if (nowTime - lastSent >= intervalMs) {
       const remaining = Math.max(0, state.dailyGoal - state.currentIntake);
       if (remaining > 0) {
         sendBrowserNotification(
-          'Time to Hydrate! 💧',
-          `Stay refreshed! You have ${remaining} ml left to reach today's goal.`
+          'Time for a sip! 💧',
+          `Stay on track with your daily goal — drink a fresh glass of water (${remaining} ml remaining today).`
         );
+        localStorage.setItem(STORAGE_KEYS.LAST_REMINDER_TIMESTAMP, nowTime.toString());
       }
-    }, intervalMs);
+    }
   }
 
   function sendBrowserNotification(title, body) {
@@ -594,14 +798,19 @@
       return;
     }
 
+    const isAwake = isCurrentlyAwakeTime(state.wakeTime, state.bedTime);
+    const scheduleStatus = isAwake
+      ? 'Currently in active awake hours.'
+      : 'Note: You are currently within quiet sleeping hours (0 alerts sent automatically).';
+
     if (Notification.permission === 'granted') {
-      sendBrowserNotification('Drink H2O Test Reminder 💧', 'Hydration reminders are working great!');
-      showToast('Test notification dispatched! Check your desktop/banner.');
+      sendBrowserNotification('Drink H2O Test Reminder 💧', `Hydration reminders are working! ${scheduleStatus}`);
+      showToast('Test notification dispatched! 🔔');
     } else {
       Notification.requestPermission().then(perm => {
         if (perm === 'granted') {
-          sendBrowserNotification('Drink H2O Test Reminder 💧', 'Hydration alerts are active!');
-          showToast('Test notification dispatched!');
+          sendBrowserNotification('Drink H2O Test Reminder 💧', `Hydration alerts active! ${scheduleStatus}`);
+          showToast('Notifications enabled and test alert dispatched! 🔔');
           state.remindersEnabled = true;
           elements.reminderToggle.checked = true;
           localStorage.setItem(STORAGE_KEYS.REMINDERS_ENABLED, 'true');
@@ -762,6 +971,9 @@
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(state.profile));
     localStorage.setItem(STORAGE_KEYS.STREAK, state.streak.toString());
     localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history));
+    localStorage.setItem(STORAGE_KEYS.WAKE_TIME, state.wakeTime);
+    localStorage.setItem(STORAGE_KEYS.BED_TIME, state.bedTime);
+    localStorage.setItem(STORAGE_KEYS.REMINDER_MODE, state.reminderMode);
     if (state.lastCompletedDate) {
       localStorage.setItem(STORAGE_KEYS.LAST_COMPLETED_DATE, state.lastCompletedDate);
     } else {
@@ -1204,7 +1416,12 @@
     elements.customGoalInput.value = prof.customGoal || state.dailyGoal;
     toggleCustomGoalVisibility(prof.isOverridden);
 
+    if (elements.wakeTimeInput) elements.wakeTimeInput.value = state.wakeTime;
+    if (elements.bedTimeInput) elements.bedTimeInput.value = state.bedTime;
+    if (elements.reminderModeSelect) elements.reminderModeSelect.value = state.reminderMode;
+
     updateProfilePreview();
+    updateSmartScheduleUI();
     updateReminderUI();
 
     elements.profileModal.classList.remove('hidden');
@@ -1282,6 +1499,23 @@
     elements.previewGoalLiters.textContent = `(${(displayGoal / 1000).toFixed(2)} L)`;
     const glasses = (displayGoal / 250).toFixed(0);
     elements.previewGlasses.textContent = `≈ ${glasses} glasses (250ml each)`;
+
+    // Update dynamic smart interval in sync with preview target and wake schedule
+    const wake = elements.wakeTimeInput ? (elements.wakeTimeInput.value || state.wakeTime) : state.wakeTime;
+    const bed = elements.bedTimeInput ? (elements.bedTimeInput.value || state.bedTime) : state.bedTime;
+    const awake = calculateAwakeHours(wake, bed);
+    const smart = calculateSmartInterval(displayGoal, awake.minutes);
+    state.smartIntervalMinutes = smart.intervalMinutes;
+
+    if (elements.scheduleAwakeBadge) elements.scheduleAwakeBadge.textContent = awake.hoursText;
+    if (elements.smartGlassesText) elements.smartGlassesText.textContent = `${smart.glasses} glasses (250ml each)`;
+    if (elements.smartIntervalValue) elements.smartIntervalValue.textContent = smart.intervalText;
+    if (elements.smartIntervalExplanation) {
+      const wake12 = formatTime12h(wake);
+      const bed12 = formatTime12h(bed);
+      elements.smartIntervalExplanation.textContent =
+        `Based on your ${awake.hoursText} (${wake12} – ${bed12}) and ${displayGoal} ml target, drinking 1 glass ${smart.intervalText.toLowerCase()} keeps you consistently hydrated without night-time interruption.`;
+    }
   }
 
   function handleProfileSubmit(e) {
@@ -1298,12 +1532,26 @@
       state.dailyGoal = calculated;
     }
 
+    if (elements.wakeTimeInput && elements.wakeTimeInput.value) {
+      state.wakeTime = elements.wakeTimeInput.value;
+    }
+    if (elements.bedTimeInput && elements.bedTimeInput.value) {
+      state.bedTime = elements.bedTimeInput.value;
+    }
+    if (elements.reminderModeSelect) {
+      state.reminderMode = elements.reminderModeSelect.value;
+    }
+
+    updateSmartScheduleUI();
     syncTodayHistory();
     saveState();
     updateUI();
     renderCalendar();
+    if (state.remindersEnabled) {
+      scheduleReminders();
+    }
     closeProfileModal();
-    showToast(`Hydration target updated to ${state.dailyGoal} ml! 💧`);
+    showToast(`Hydration target & schedule updated! 💧`);
 
     checkGoalMilestone();
   }
@@ -1370,7 +1618,9 @@
     elements.resetDayBtn.addEventListener('click', resetDay);
 
     // Streak Reset Prompts
-    elements.quickStreakResetBtn.addEventListener('click', promptResetStreak);
+    if (elements.quickStreakResetBtn) {
+      elements.quickStreakResetBtn.addEventListener('click', promptResetStreak);
+    }
     elements.streakBadge.addEventListener('click', promptResetStreak);
     elements.modalResetStreakBtn.addEventListener('click', promptResetStreak);
 
@@ -1453,8 +1703,51 @@
       if (e.target === elements.profileModal) closeProfileModal();
     });
 
-    // Browser Reminders Events
+    // Browser Reminders & Schedule Events
     elements.reminderToggle.addEventListener('change', handleReminderToggleChange);
+
+    if (elements.reminderModeSelect) {
+      elements.reminderModeSelect.addEventListener('change', (e) => {
+        state.reminderMode = e.target.value;
+        localStorage.setItem(STORAGE_KEYS.REMINDER_MODE, state.reminderMode);
+        updateSmartScheduleUI();
+        if (state.remindersEnabled) {
+          scheduleReminders();
+        }
+        showToast(state.reminderMode === 'smart' ? 'Smart schedule interval activated! 💧' : 'Fixed interval mode activated.');
+      });
+    }
+
+    if (elements.wakeTimeInput) {
+      elements.wakeTimeInput.addEventListener('input', () => {
+        state.wakeTime = elements.wakeTimeInput.value || '07:00';
+        localStorage.setItem(STORAGE_KEYS.WAKE_TIME, state.wakeTime);
+        updateSmartScheduleUI();
+        if (state.remindersEnabled) scheduleReminders();
+      });
+      elements.wakeTimeInput.addEventListener('change', () => {
+        state.wakeTime = elements.wakeTimeInput.value || '07:00';
+        localStorage.setItem(STORAGE_KEYS.WAKE_TIME, state.wakeTime);
+        updateSmartScheduleUI();
+        if (state.remindersEnabled) scheduleReminders();
+      });
+    }
+
+    if (elements.bedTimeInput) {
+      elements.bedTimeInput.addEventListener('input', () => {
+        state.bedTime = elements.bedTimeInput.value || '23:00';
+        localStorage.setItem(STORAGE_KEYS.BED_TIME, state.bedTime);
+        updateSmartScheduleUI();
+        if (state.remindersEnabled) scheduleReminders();
+      });
+      elements.bedTimeInput.addEventListener('change', () => {
+        state.bedTime = elements.bedTimeInput.value || '23:00';
+        localStorage.setItem(STORAGE_KEYS.BED_TIME, state.bedTime);
+        updateSmartScheduleUI();
+        if (state.remindersEnabled) scheduleReminders();
+      });
+    }
+
     elements.reminderIntervalSelect.addEventListener('change', (e) => {
       const interval = parseInt(e.target.value, 10) || 60;
       state.reminderIntervalMinutes = interval;
@@ -1462,7 +1755,7 @@
       if (state.remindersEnabled) {
         scheduleReminders();
         updateReminderUI();
-        showToast(`Reminder interval set to ${interval} mins.`);
+        showToast(`Custom reminder interval set to ${interval} mins.`);
       }
     });
     elements.testReminderBtn.addEventListener('click', triggerTestReminder);

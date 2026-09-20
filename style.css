@@ -180,58 +180,73 @@ body {
   }
 }
 
-/* Header */
+/* Header: Compact, Centered, Flexbox-Aligned */
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 4px;
+  padding: 10px 4px 6px;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 10px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .brand-icon {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
   flex-shrink: 0;
   transition: transform 0.3s ease;
 }
 
 .brand:hover .brand-icon {
-  transform: rotate(-8deg) scale(1.05);
+  transform: rotate(-6deg) scale(1.04);
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .brand-title {
-  font-size: 1.28rem;
+  font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.2;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .brand-subtitle {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
   font-weight: 500;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* Goal Streak Badge */
@@ -241,7 +256,7 @@ body {
   gap: 5px;
   background: var(--fire-bg);
   border: 1.5px solid var(--fire-border);
-  padding: 6px 10px;
+  padding: 6px 11px;
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
@@ -309,23 +324,6 @@ body {
   border-color: var(--danger);
   color: var(--danger);
   background: var(--danger-bg);
-}
-
-#pwaInstallBtn {
-  color: var(--primary);
-  border-color: var(--primary);
-  background: var(--primary-light);
-  animation: pulseGlow 2.5s infinite ease-in-out;
-}
-
-#pwaInstallBtn:hover {
-  background: var(--primary);
-  color: #ffffff;
-}
-
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(2, 132, 199, 0); }
 }
 
 .hidden {
@@ -1406,7 +1404,7 @@ body {
   color: var(--text-main);
 }
 
-/* Browser Reminders Box */
+/* Smart Reminders & Sleep Schedule Settings Box */
 .reminder-settings-box {
   background: var(--surface-secondary);
   border: 1px solid var(--border);
@@ -1415,7 +1413,7 @@ body {
   margin-bottom: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .reminder-header {
@@ -1436,7 +1434,7 @@ body {
 
 .reminder-title {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-main);
 }
@@ -1494,16 +1492,199 @@ input:checked + .slider:before {
   transform: translateX(20px);
 }
 
+/* Sleep & Wake Schedule Sub-Card */
+.schedule-settings-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.schedule-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.schedule-title-icon {
+  font-size: 0.95rem;
+}
+
+.schedule-title-text {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.schedule-awake-badge {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.schedule-grid {
+  margin-bottom: 0;
+  gap: 10px;
+}
+
+.schedule-field {
+  margin-bottom: 0;
+}
+
+.schedule-field label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.time-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.time-prefix-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 0.95rem;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+.time-input-wrap input[type="time"] {
+  width: 100%;
+  padding: 8px 8px 8px 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-secondary);
+  color: var(--text-main);
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: inherit;
+  transition: var(--transition);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+}
+
+.time-input-wrap input[type="time"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+  background: var(--surface);
+}
+
+/* Dynamic Hydration Interval Calculation Card */
+.smart-interval-card {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(56, 189, 248, 0.05));
+  border: 1.5px solid rgba(2, 132, 199, 0.22);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-theme="dark"] .smart-interval-card {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.16), rgba(14, 165, 233, 0.08));
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.smart-interval-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.smart-interval-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: inline-block;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.45; }
+}
+
+.smart-interval-glasses {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.smart-interval-highlight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.interval-caption {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.interval-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.01em;
+}
+
+.smart-interval-explanation {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  line-height: 1.42;
+  margin: 0;
+}
+
 .reminder-options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 8px;
+  gap: 10px;
+  padding-top: 10px;
   border-top: 1px dashed var(--border);
 }
 
 .reminder-options.hidden {
-  display: none;
+  display: none !important;
 }
 
 .reminder-interval-row {
@@ -1520,7 +1701,7 @@ input:checked + .slider:before {
 }
 
 .reminder-interval-row select {
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
@@ -1534,12 +1715,29 @@ input:checked + .slider:before {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .reminder-perm-status {
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   color: var(--text-muted);
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.reminder-perm-status.active {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.35);
+  background: var(--success-bg);
+}
+
+.reminder-perm-status.quiet {
+  color: var(--primary);
+  border-color: rgba(2, 132, 199, 0.3);
+  background: var(--primary-light);
 }
 
 /* Streak Management Box in Profile Modal */
@@ -1992,17 +2190,58 @@ input:checked + .slider:before {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mobile Screen Tuning */
-@media (max-width: 420px) {
+/* Mobile Screen Tuning & Flexbox Compact Header Alignment */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 8px 2px 6px;
+    gap: 8px;
+  }
+  .brand-icon {
+    width: 36px;
+    height: 36px;
+  }
   .brand-title {
     font-size: 1.15rem;
   }
+  .brand-subtitle {
+    font-size: 0.7rem;
+  }
+  .header-actions {
+    gap: 6px;
+  }
   .streak-badge {
-    padding: 5px 8px;
+    padding: 5px 9px;
+    gap: 4px;
   }
   .streak-text {
     font-size: 0.72rem;
   }
+  .icon-btn {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand-subtitle {
+    display: none;
+  }
+  .streak-badge {
+    padding: 4px 7px;
+  }
+  .streak-text {
+    font-size: 0.68rem;
+  }
+  .header-actions {
+    gap: 5px;
+  }
+  .icon-btn {
+    width: 33px;
+    height: 33px;
+  }
+}
+
+@media (max-width: 420px) {
   .circular-meter {
     width: 200px;
     height: 200px;
@@ -2016,7 +2255,7 @@ input:checked + .slider:before {
   .modal-card {
     padding: 18px 14px;
   }
-  .form-row.two-cols {
+  .form-row.two-cols:not(.schedule-grid) {
     grid-template-columns: 1fr;
   }
   .calendar-month-label {
