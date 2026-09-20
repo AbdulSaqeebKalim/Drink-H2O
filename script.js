@@ -2213,6 +2213,7 @@ async function requestHydrationNotifications() {
 // Trigger Alert on Sip Timer Completion
 function sendSipNotification() {
   playWaterChime();
+  triggerHydrationAlarm();
 
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('Time for a Sip! 💧', {
@@ -2222,4 +2223,44 @@ function sendSipNotification() {
     });
   }
 }
+// Function to trigger loud water alarm sound + phone vibration
+function triggerHydrationAlarm() {
+  // 1. Trigger Mobile Vibration Pattern (Vibrates 500ms, pauses 200ms, vibrates 500ms, pauses 200ms, vibrates 800ms)
+  if ('vibrate' in navigator) {
+    navigator.vibrate([500, 200, 500, 200, 800]);
+  }
+
+  // 2. Play Loud Water/Droplet Alarm Sound using Web Audio API
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    // Create a series of water drop / bubble pitch sweeps
+    const dropFreqs = [600, 850, 1100, 1350];
+
+    dropFreqs.forEach((freq, index) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+
+      // Pitch sweep mimicking a water drop bubble ("bloop" sound)
+      const startTime = audioCtx.currentTime + (index * 0.18);
+      osc.frequency.setValueAtTime(freq, startTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.8, startTime + 0.12);
+
+      // Volume control (Set high for loud alarm output)
+      gain.gain.setValueAtTime(0.8, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.15);
+    });
+  } catch (e) {
+    console.warn('Audio alarm playback failed:', e);
+  }
+        }
 
