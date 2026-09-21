@@ -34,4 +34,4 @@ You only need a modern web browser (Google Chrome, Mozilla Firefox, Safari, Edge
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/abdulsaqeebkalim-design/Drink-H2O.git](https://github.com/abdulsaqeebkalim-design/Drink-H2O.git)
+   git clone [https://github.com/abdulsaqeebkalim-design/Drink-H2O.git](https://github.com/abdulsaqeebkalim/Drink-H2O.git)
