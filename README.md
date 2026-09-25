@@ -5,7 +5,7 @@
 ---
 ## 💧 Try it Live
 
-- https://github.com/AbdulSaqeebKalim/Drink-H2O
+- https://abdulsaqeebkalim.github.io/Drink-H2O/
 
 ## ✨ Features
 
