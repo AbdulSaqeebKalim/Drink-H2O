@@ -3,6 +3,9 @@
 **Drink H2O** is a lightweight, intuitive web application designed to help users track their daily water intake and achieve their hydration goals effortlessly. Built with clean web technologies and generated/assisted by **Google AI Studio**.
 
 ---
+## 💧 Try it Live
+
+- https://github.com/AbdulSaqeebKalim/Drink-H2O
 
 ## ✨ Features
 
